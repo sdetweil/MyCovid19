@@ -1,0 +1,24 @@
+{
+  "name": "MyCovid19",
+  "version": "1.0.0",
+  "description": "Magic Mirror module to display COVID 19 virus data line charts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdetweil/MyCovid19.git"
+  },
+  "keywords": [
+    "Water Levels blynk"
+  ],
+  "author": "Sam Detweiler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sdetweil/MyCovid19/issues"
+  },
+  "dependencies": {
+    "chart.js": "2.5.0",
+    "path": "^0.12.7",
+    "moment": "^2.23.0",
+    "xlsx-to-json":"latest",
+    "fs":"latest"
+  }
+}
