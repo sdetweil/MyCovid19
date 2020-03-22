@@ -41,9 +41,9 @@ monitor COVID 19 virus stats with line graphs
 
 ## Config Options
 
-all options are case insensitive, (all lower, mixed or all uppercase supported)
+all options are case sensitive
 
-| **Option** | **Default** | **Description** | **Info** 
+| **Option** | **Default** | **Default** | **Info** 
 | --- | --- | --- | --- |
 | `countries` | REQUIRED | '' | the list of countries for which you would like the chart to report |
 | `line_colors` | REQUIRED | `` | an array of colors to represent the individual country data|
