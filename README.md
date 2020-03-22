@@ -41,7 +41,7 @@ monitor COVID 19 virus stats with line graphs
 
 ## Config Options
 
-all options are case insensitive, (all lower, mixed or all uppercase supported)
+all options are case sensitive
 
 | **Option** | **Default** | **Description** | **Info** 
 | --- | --- | --- | --- |
