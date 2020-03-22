@@ -24,6 +24,7 @@ Module.register("MyCovid19", {
     labels:['days'],
     YaxisLabel:"Count",
     chart_type:"cumulative_cases",
+    backgroundColor: 'black',
 
   },
   ticklabel:null,
@@ -129,7 +130,8 @@ Module.register("MyCovid19", {
           canvas = document.createElement("canvas");
           canvas.id = "myChart" + this_country;
           canvas.style.width = self.config.width + "px";
-          canvas.style.height = self.config.height + "px";          
+          canvas.style.height = self.config.height + "px";    
+          canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
         }
         // if the chart has been created
