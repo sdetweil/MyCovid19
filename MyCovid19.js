@@ -26,7 +26,8 @@ Module.register("MyCovid19", {
     chart_type:"cumulative_cases",
 
   },
-  ticklabel:["1/1/2020", "2/1/2020", "3/1/2020"],
+  ticklabel:null,
+  startLabel: ["1/1/2020", "2/1/2020", "3/1/2020"],
   url: "",
   loaded: false,
   our_data: null,
@@ -60,10 +61,21 @@ Module.register("MyCovid19", {
       }
     }
     this.sendSocketNotification("CONFIG", this.config);
+
+    var next_time=moment().endOf('day').add(2,'hours')
+   // if(self.config.debug)
+      console.log("timeout diff ="+ next_time.diff(moment()))
+    setTimeout(self.refreshData, next_time.diff(moment()));
+
     for (var i = 0; i < self.config.countries.length; i++) {
       self.pointColors[i] = []
     }
 
+  },
+  refreshData: function(){
+    var next_time=moment().endOf('day').add(2,'hours')
+    setTimeout(self.refreshData, next_time.diff(moment()));
+    his.sendSocketNotification("REFESH", null);
   },
   suspend: function () {
     self.suspended = true;
@@ -243,6 +255,7 @@ Module.register("MyCovid19", {
       var last_item=this.our_data[keys[0]];
       var last_date=last_item['cases'][last_item['cases'].length-1].x;
       const myMoment = moment(last_date, 'MM/DD/YYY')
+      this.ticklabel=this.startLabel.slice()
       for(var i=myMoment.month()+1; i>3; i++){
          this.ticklabel.push(i+"/1/2020")
       }
