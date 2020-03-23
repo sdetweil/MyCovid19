@@ -63,7 +63,11 @@ module.exports = NodeHelper.create({
                   if(err) {
                     console.error(err);
                   } else {
-                    callback(result, payload)
+                    fs.unlink(xf, (error) => {
+                      if(!error){
+                        callback(result, payload)
+                      }
+                    })
                   }
                 }
               )
