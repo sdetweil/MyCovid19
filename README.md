@@ -48,7 +48,7 @@ all options are case sensitive
 | `countries` | REQUIRED | '' | the list of countries for which you would like the chart to report |
 | `line_colors` | REQUIRED | `` | an array of colors to represent the individual country data|
 | `chart_type` | OPTIONAL | 'cumulative cases' | cases reported by country |
-|        |          |'cumulative cases' |  deaths reported by country |
+|        |          |'cumulative deaths' |  deaths reported by country |
   `ranges` | 'REQUIRED' | ''| the Y axis size and step rate ) |
 | `width` | OPTIONAL | '400'  |  width of the output chart |
 | `height` | OPTIONAL| '400' | height of the output chart |
