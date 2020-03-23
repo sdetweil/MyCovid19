@@ -172,8 +172,10 @@ Module.register("MyCovid19", {
                 textAlign: 'right',    
               },
               tooltips: {
-                enabled: false,
-                displayColors: false
+                enabled: true,
+                displayColors: true,
+                position: 'nearest',
+                intersect: false,
               },
               responsive: false,
               elements: {
