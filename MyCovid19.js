@@ -3,7 +3,7 @@
  * By Mykle1
  * MIT Licensed
  */
-var self;
+
 Module.register("MyCovid19", {
 
   // Module config defaults.
@@ -27,6 +27,7 @@ Module.register("MyCovid19", {
     backgroundColor: 'black',
 
   },
+  ourID: null, 
   ticklabel:null,
   startLabel: ["1/1/2020", "2/1/2020", "3/1/2020"],
   url: "",
@@ -43,7 +44,8 @@ Module.register("MyCovid19", {
 
   start: function () {
     Log.info("Starting module: " + this.name);
-    self = this;
+    var self = this;
+    self.ourID = self.identifier+"_"+Math.floor(Math.random() * 1000) + 1;
     //  Set locale.
     moment.locale(config.language);
     if(this.config.debug) console.log("config =" + JSON.stringify(this.config));
@@ -61,34 +63,31 @@ Module.register("MyCovid19", {
           // code block
       }
     }
-    this.sendSocketNotification("CONFIG", this.config);
+    this.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
 
     var next_time=moment().endOf('day').add(2,'hours')
    // if(self.config.debug)
       console.log("timeout diff ="+ next_time.diff(moment()))
     setTimeout(self.refreshData, next_time.diff(moment()));
 
-    for (var i = 0; i < self.config.countries.length; i++) {
-      self.pointColors[i] = []
-    }
-
   },
   refreshData: function(){
     var next_time=moment().endOf('day').add(2,'hours')
     setTimeout(self.refreshData, next_time.diff(moment()));
-    self.sendSocketNotification("REFRESH", null);
+    self.sendSocketNotification("REFRESH", {id:self.identifier,config:self.config});
   },
   suspend: function () {
-    self.suspended = true;
-    self.sendSocketNotification("SUSPEND", null);
+    this.suspended = true;
+    //self.sendSocketNotification("SUSPEND", null);
   },
   resume: function () {
-    self.suspended = false;
-    self.sendSocketNotification("RESUME", null);
+    this.suspended = false;
+    //self.sendSocketNotification("RESUME", null);
+    this.updateDom(this.config.initialLoadDelay);
   },
 
   getDom: function () {
-
+    var self = this
     // if the MM wrapper hasn't been created
     if (self.wrapper == null) {
       self.wrapper = document.createElement("div");
@@ -119,7 +118,7 @@ Module.register("MyCovid19", {
         // clear the work variable
         var canvas = null;
         // try to locate the existing chart
-        if ((canvas = document.getElementById("myChart" + this_country)) == null) {
+        if ((canvas = document.getElementById("myChart"+self.ourID + this_country)) == null) {
           var c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
@@ -128,7 +127,7 @@ Module.register("MyCovid19", {
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
-          canvas.id = "myChart" + this_country;
+          canvas.id = "myChart" +self.ourID + this_country;
           canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
           canvas.style.backgroundColor=self.config.backgroundColor;
@@ -269,20 +268,24 @@ Module.register("MyCovid19", {
   notificationReceived: function (notification, payload) {},
 
   socketNotificationReceived: function (notification, payload) {
+    var self = this
     if (notification === 'Data') {
-      if(this.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
-      this.our_data = payload
-      var keys=Object.keys(this.our_data);
-      var last_item=this.our_data[keys[0]];
-      var last_date=last_item['cases'][last_item['cases'].length-1].x;
-      const myMoment = moment(last_date, 'MM/DD/YYY')
-      this.ticklabel=this.startLabel.slice()
-      for(var i=myMoment.month()+1; i>3; i++){
-         this.ticklabel.push(i+"/1/2020")
+      if(payload.id == self.ourID){
+        if(this.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
+        this.our_data = payload.data
+        var keys=Object.keys(this.our_data);
+        var last_item=this.our_data[keys[0]];
+        var last_date=last_item['cases'][last_item['cases'].length-1].x;
+        const myMoment = moment(last_date, 'MM/DD/YYY')
+        this.ticklabel=this.startLabel.slice()
+        for(var i=myMoment.month()+1; i>3; i++){
+           this.ticklabel.push(i+"/1/2020")
+        }
+        if(last_date != (myMoment.month()+1)+'/1/2020')
+          this.ticklabel.push(last_date)
+        if(!self.suspended)
+          self.updateDom(this.config.initialLoadDelay);
       }
-      if(last_date != (myMoment.month()+1)+'/1/2020')
-        this.ticklabel.push(last_date)
-      this.updateDom(this.config.initialLoadDelay);
     }
   },
 

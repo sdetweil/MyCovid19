@@ -16,9 +16,9 @@ var fs=require('fs')
 module.exports = NodeHelper.create({
 
     self: 0,
-    countries_loaded: [],
+//    countries_loaded: [],
     country_index: 0,
-    results: {},
+//    results: {},
    // using_chartjs: true,
     suspended: false,
     timer: null,
@@ -31,13 +31,13 @@ module.exports = NodeHelper.create({
       self.lastUpdated = moment()
     },
 
-    getInitialData: function (url, callback) {
+    getInitialData: function (url, payload,  callback) {
       var date = new Date();
       var today= date.getFullYear()+"-"+("0"+(date.getMonth()+1)).substring(-2)+"-"+date.getDate() + ".xlsx"
       var texturl= url + today
-      if(self.config.debug)
+      if(payload.config.debug)
         console.log("fn="+texturl)
-      var xf="rawdata"+"-"+today      
+      var xf="rawdata"+"-"+payload.id+"_"+today      
       request(
         {
           url: texturl,
@@ -48,10 +48,10 @@ module.exports = NodeHelper.create({
           gzip: true,
           method: 'GET'
         }, (error, response, body) => {
-        if(self.config.debug)
+        if(payload.config.debug)
           console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)
         if (!error && response.statusCode === 200) {
-              if(self.config.debug)
+              if(payload.config.debug)
                 console.log("have data")
               fs.writeFileSync(xf,body)
               cvt({
@@ -63,7 +63,7 @@ module.exports = NodeHelper.create({
                   if(err) {
                     console.error(err);
                   } else {
-                    callback(result)
+                    callback(result, payload)
                   }
                 }
               )
@@ -73,18 +73,18 @@ module.exports = NodeHelper.create({
       );
     },
 
-     doGetcountries: function (init, data) {
+     doGetcountries: function (init, payload, data) {
       // if we are not suspended, and the last time we updated was at least the delay time,
       // then update again
 			var now=moment()
 			var elapsed= moment.duration(now.diff(self.lastUpdated,'minutes'))
 
 			//console.log("getcountries elapsed time since last updated="+elapsed+" init="+init);
-      if ((self.suspended == false &&  elapsed>= self.config.updateInterval) || init==true) {
+      if ((self.suspended == false &&  elapsed>= payload.config.updateInterval) || init==true) {
         self.lastUpdated = moment()
         // clear the array of current data
         //console.log("getting recent pin data");
-        self.countries_loaded = [];
+        countries_loaded = [];
         // get all the countries, callback when done
 
         // format data keyed by country name
@@ -97,9 +97,9 @@ module.exports = NodeHelper.create({
               country[v]=[]
             country[v].push(entry)
         }
-
+        var results={}
         // loop thru all the configured countries 
-        for(var c of this.config.countries)
+        for(var c of payload.config.countries)
         {          
           var totalc=0; var totald=0;
           var cases=[]; var deaths=[];
@@ -124,41 +124,41 @@ module.exports = NodeHelper.create({
           }
 
           var d={'cases':cases, 'deaths':deaths,'cumulative_cases':tcases,'cumulative_deaths':tdeaths}
-          if(this.config.debug)
-            console.log("data returned ="+JSON.stringify(d))
+          //if(payload.config.debug)
+          //  console.log("data returned ="+JSON.stringify(d))
           // add this country to the results
-          self.results[c]=d
+          results[c]=d
           // signify the country was counted
-          self.countries_loaded.push(c)
+          countries_loaded.push(c)
         }
           // send the data on to the display module
-        if(self.config.debug) console.log("data="+JSON.stringify(self.results))
-        self.sendSocketNotification('Data', self.results)
+        //if(payload.config.debug) console.log("data="+JSON.stringify(results))
+        if(payload.config.debug) console.log("sending data back to module="+payload.id)
+        self.sendSocketNotification('Data', {id:payload.id, data:results})
       }
     },
-    getData: function (init) {
+    getData: function (init, payload) {
       
 			var now=moment()
 			var elapsed= moment.duration(now.diff(self.lastUpdated,'minutes'))
-      if(self.config.debug)
+      if(payload.config.debug)
 			  console.log("getData  elapsed time since last updated="+elapsed+" init="+init);
-      if ((elapsed>= self.config.updateInterval) || init==true) {
- 	      self.countries_loaded = [];
-   	    self.getInitialData(self.url, function (data) {
-          if(self.config.debug) console.log("data data="+JSON.stringify(data))
-    	    self.doGetcountries(init, data);
+      if ((elapsed>= payload.config.updateInterval) || init==true) {
+   	    self.getInitialData(self.url, payload, function (data) {
+          //if(payload.config.debug) console.log("data data="+JSON.stringify(data))
+    	    self.doGetcountries(init, payload, data);
       	});
 			}
     },
     //Subclass socketNotificationReceived received.
     socketNotificationReceived: function (notification, payload) {
       if (notification === 'CONFIG') {
-        this.config = payload;
+        //this.config[payload.id] = payload.data;
         //console.log("config =" + JSON.stringify(payload));
-        self.getData(true);
+        self.getData(true, payload);
       }
       else if (notification === 'REFRESH') {
-         self.getData(true);
+         self.getData(true, payload);
       } else if (notification === 'SUSPEND') {
         self.suspended = true;
       } else if (notification === 'RESUME') {
