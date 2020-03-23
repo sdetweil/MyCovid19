@@ -76,7 +76,7 @@ Module.register("MyCovid19", {
   refreshData: function(){
     var next_time=moment().endOf('day').add(2,'hours')
     setTimeout(self.refreshData, next_time.diff(moment()));
-    his.sendSocketNotification("REFESH", null);
+    self.sendSocketNotification("REFRESH", null);
   },
   suspend: function () {
     self.suspended = true;
