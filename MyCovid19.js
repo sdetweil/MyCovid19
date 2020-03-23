@@ -129,7 +129,7 @@ Module.register("MyCovid19", {
 
           canvas = document.createElement("canvas");
           canvas.id = "myChart" + this_country;
-          canvas.style.width = self.config.width + "px";
+          canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
           canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
@@ -212,7 +212,8 @@ Module.register("MyCovid19", {
                     },
                   }
                 ],
-                yAxes: [{
+                yAxes: [
+                  {
                     display: true,
                     scaleLabel: {
                       display: true,
@@ -235,7 +236,23 @@ Module.register("MyCovid19", {
                       stepSize: self.config.ranges.stepSize,
                       fontColor: 'white'
                     },
-                  }
+                  },
+                 /* {
+                    display: true,
+                    position: 'right',   
+                    ticks: {
+                      beginAtZero: true,
+                      source: 'data',
+                      min: self.config.ranges.min,
+                      suggestedMax: self.config.ranges.max,
+                      stepSize: self.config.ranges.stepSize,
+                      fontColor: 'white'
+                    },
+                    gridLines: {
+                        display: false,
+                        drawTicks: false
+                    }
+                  } */
                 ]
               },
             }
@@ -261,7 +278,8 @@ Module.register("MyCovid19", {
       for(var i=myMoment.month()+1; i>3; i++){
          this.ticklabel.push(i+"/1/2020")
       }
-      this.ticklabel.push(last_date)
+      if(last_date != (myMoment.month()+1)+'/1/2020')
+        this.ticklabel.push(last_date)
       this.updateDom(this.config.initialLoadDelay);
     }
   },
