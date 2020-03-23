@@ -58,8 +58,10 @@ Module.register("MyCovid19", {
           // code block
           self.config.countries[i]='United_States_of_America'
           break;
-
+        case "uk":
+          self.config.countries[i]="United Kingdom" 
         default:
+           self.config.countries[i]= self.config.countries[i].replace(" ","_")
           // code block
       }
     }
@@ -150,15 +152,17 @@ Module.register("MyCovid19", {
         }
         var ds = []
         for(var x in self.config.countries){
-           ds.push({
-                  xAxisID: 'dates',
-                  data: self.our_data[self.config.countries[x]][self.config.chart_type],
-                  fill: false,
-                  borderColor: self.config.line_colors[x], // Add custom color border (Line)
-                  label: self.config.countrylist[x],
-                  showInLegend: true, 
-                  //backgroundColor:self.our_data[this_country].gradient //self.pointColors[country_index]  //'#2196f3',
-           })
+          if(self.our_data[self.config.countries[x]] != undefined){
+            ds.push({
+                   xAxisID: 'dates',
+                   data: self.our_data[self.config.countries[x]][self.config.chart_type],
+                   fill: false,
+                   borderColor: self.config.line_colors[x], // Add custom color border (Line)
+                   label: self.config.countrylist[x],
+                   showInLegend: true, 
+                   //backgroundColor:self.our_data[this_country].gradient //self.pointColors[country_index]  //'#2196f3',
+            })
+          }  
         }
                 // create it now
         self.charts[country_index] = new Chart(canvas, {

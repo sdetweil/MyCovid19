@@ -100,36 +100,39 @@ module.exports = NodeHelper.create({
         var results={}
         // loop thru all the configured countries 
         for(var c of payload.config.countries)
-        {          
-          var totalc=0; var totald=0;
-          var cases=[]; var deaths=[];
-          var tcases=[]; var tdeaths=[];
-          for(var u of country[c]){
-             //console.log("date="+u.DateRep+" cases="+u.Cases+" deaths="+u.Deaths+" geoid="+u.GeoId)
-             if(u.DateRep.endsWith("20")){
-               cases.push({ x: u.DateRep+"20", y:parseInt(u.Cases)})
-               deaths.push({ x: u.DateRep+"20", y:parseInt(u.Deaths)})
-             }
-          }
-          // data presented in reverse dsate order, flip them
-          cases=cases.reverse()
-          deaths=deaths.reverse()
-          // initialize cumulative counters to 0
-          tcases=cases
-          tdeaths=deaths
-          // loop thru data and create cumulative counters
-          for(var i=1 ; i< cases.length; i++){
-            tcases[i].y+=tcases[i-1].y;
-            tdeaths[i].y+=tdeaths[i-1].y
-          }
+        {    
+          if( country[c]!=undefined){      
+            var totalc=0; var totald=0;
+            var cases=[]; var deaths=[];
+            var tcases=[]; var tdeaths=[];
 
-          var d={'cases':cases, 'deaths':deaths,'cumulative_cases':tcases,'cumulative_deaths':tdeaths}
-          //if(payload.config.debug)
-          //  console.log("data returned ="+JSON.stringify(d))
-          // add this country to the results
-          results[c]=d
-          // signify the country was counted
-          countries_loaded.push(c)
+            for(var u of country[c]){
+               //console.log("date="+u.DateRep+" cases="+u.Cases+" deaths="+u.Deaths+" geoid="+u.GeoId)
+               if(u.DateRep.endsWith("20")){
+                 cases.push({ x: u.DateRep+"20", y:parseInt(u.Cases)})
+                 deaths.push({ x: u.DateRep+"20", y:parseInt(u.Deaths)})
+               }
+            }
+            // data presented in reverse dsate order, flip them
+            cases=cases.reverse()
+            deaths=deaths.reverse()
+            // initialize cumulative counters to 0
+            tcases=cases
+            tdeaths=deaths
+            // loop thru data and create cumulative counters
+            for(var i=1 ; i< cases.length; i++){
+              tcases[i].y+=tcases[i-1].y;
+              tdeaths[i].y+=tdeaths[i-1].y
+            }
+
+            var d={'cases':cases, 'deaths':deaths,'cumulative_cases':tcases,'cumulative_deaths':tdeaths}
+            //if(payload.config.debug)
+            //  console.log("data returned ="+JSON.stringify(d))
+            // add this country to the results
+            results[c]=d
+            // signify the country was counted
+            countries_loaded.push(c)
+          }
         }
           // send the data on to the display module
         //if(payload.config.debug) console.log("data="+JSON.stringify(results))
