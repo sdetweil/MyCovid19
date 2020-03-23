@@ -52,7 +52,7 @@ all options are case sensitive
   `ranges` | 'REQUIRED' | ''| the Y axis size and step rate ) |
 | `width` | OPTIONAL | '400'  |  width of the output chart |
 | `height` | OPTIONAL| '400' | height of the output chart |
-| `backgroundColor' | OPTIONAL | 'black' | background of chart |
+| `backgroundColor` | OPTIONAL | 'black' | background of chart |
 
 
 
