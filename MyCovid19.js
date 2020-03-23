@@ -35,7 +35,7 @@ Module.register("MyCovid19", {
   our_data: null,
   wrapper: null,
   suspended: false,
-  charts: [],
+  charts: [null, null],
   pointColors: [],
 
   getScripts: function () {
@@ -95,7 +95,7 @@ Module.register("MyCovid19", {
       // if the charts will be side by side
       //if (!//this.config.stacked){
         // set the width
-        self.wrapper.style.maxWidth = this.config.maxWidth+"px";
+        self.wrapper.style.maxWidth = self.config.maxWidth+"px";
         self.wrapper.style.width = self.config.width + "px";
         self.wrapper.style.height = (parseInt(self.config.height) + 20) + "px";        
       //}
@@ -118,7 +118,7 @@ Module.register("MyCovid19", {
         // clear the work variable
         var canvas = null;
         // try to locate the existing chart
-        if ((canvas = document.getElementById("myChart"+self.ourID + this_country)) == null) {
+        if ((canvas = document.getElementById("myChart"+self.ourID )) == null) {
           var c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
@@ -127,7 +127,7 @@ Module.register("MyCovid19", {
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
-          canvas.id = "myChart" +self.ourID + this_country;
+          canvas.id = "myChart" +self.ourID ;
           canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
           canvas.style.backgroundColor=self.config.backgroundColor;
@@ -138,7 +138,15 @@ Module.register("MyCovid19", {
             // destroy it, update doesn't work reliably
             self.charts[country_index].destroy();
             // make it unreferenced
-            self.charts[country_index] = 0;
+            self.charts[country_index] = null;
+            var div = canvas.parentElement;
+            div.removeChild(canvas)
+            canvas = document.createElement("canvas");
+            canvas.id = "myChart" +self.ourID ;
+            canvas.style.width = (self.config.width -10) + "px";
+            canvas.style.height = self.config.height + "px";    
+            canvas.style.backgroundColor=self.config.backgroundColor;
+            div.appendChild(canvas);
         }
         var ds = []
         for(var x in self.config.countries){
