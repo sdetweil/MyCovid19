@@ -69,14 +69,15 @@ Module.register("MyCovid19", {
 
     var next_time=moment().endOf('day').add(2,'hours')
    // if(self.config.debug)
-      console.log("timeout diff ="+ next_time.diff(moment()))
-    setTimeout(self.refreshData, next_time.diff(moment()));
+    console.log("timeout diff ="+ next_time.diff(moment()))
+    setTimeout(()=>{self.refreshData(self)},next_time ); // next_time.diff(moment()));
 
   },
-  refreshData: function(){
+  refreshData: function(self){
+    Log.log("refreshing")
     var next_time=moment().endOf('day').add(2,'hours')
-    setTimeout(self.refreshData, next_time.diff(moment()));
-    self.sendSocketNotification("REFRESH", {id:self.identifier,config:self.config});
+     setTimeout(()=>{self.refreshData(self)},next_time); //next_time.diff(moment()));
+    self.sendSocketNotification("REFRESH", {id:self.ourID,config:self.config});
   },
   suspend: function () {
     this.suspended = true;
