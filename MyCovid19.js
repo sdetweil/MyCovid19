@@ -1,14 +1,14 @@
 /* Magic Mirror
- * Module: MMM-BMW-DS
- * By Mykle1
+ * Module: MyCovid19
+ * By sdetweil@gmail.com
  * MIT Licensed
+ * present COVID 19 virus info in line chart mode
  */
 
 Module.register("MyCovid19", {
 
   // Module config defaults.
   defaults: {
-    apiKey: "", // Get FREE API key from darksky.net
     countries: [],
     line_colors:['red','blue','green','yellow','white'],
     maxWidth: 800,
@@ -37,6 +37,9 @@ Module.register("MyCovid19", {
   suspended: false,
   charts: [null, null],
   pointColors: [],
+  newFileAvailableTimeofDay:5,
+  retryDelay: 15,
+  timeout_handle:null,
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
@@ -65,18 +68,29 @@ Module.register("MyCovid19", {
           // code block
       }
     }
-    this.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
-
-    var next_time=moment().endOf('day').add(2,'hours')
-   // if(self.config.debug)
-    console.log("timeout diff ="+ next_time.diff(moment()))
-    setTimeout(()=>{self.refreshData(self)},next_time ); // next_time.diff(moment()));
-
+    self.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
+    self.setTimerForNextRefresh(self, self.newFileAvailableTimeofDay, 'hours');
+  
   },
-  refreshData: function(self){
+  setTimerForNextRefresh(self, offset, type){
+    var next_time=0
+    if(type=='hours')
+      next_time=moment().endOf('day').add(offset,type)
+    else
+      next_time=moment().add(offset,type)
+   // if(self.config.debug)
+    var millis=next_time.diff(moment())
+    console.log("timeout diff ="+ millis)
+    if(self.timeout_handle){
+      Log.log("clearing timer")
+      clearTimeout(self.timeout_handle)
+    }
+    Log.log("starting timer")
+    self.timeout_handle=setTimeout(()=>{self.refreshData(self)},millis ); // next_time.diff(moment()));
+    Log.log("timer started")
+  },
+  refreshData: function(self){    
     Log.log("refreshing")
-    var next_time=moment().endOf('day').add(2,'hours')
-     setTimeout(()=>{self.refreshData(self)},next_time); //next_time.diff(moment()));
     self.sendSocketNotification("REFRESH", {id:self.ourID,config:self.config});
   },
   suspend: function () {
@@ -298,6 +312,12 @@ Module.register("MyCovid19", {
           this.ticklabel.push(last_date)
         if(!self.suspended)
           self.updateDom(this.config.initialLoadDelay);
+        self.setTimerForNextRefresh(self, self.newFileAvailableTimeofDay, 'hours');
+      }
+    } else if(notification==='NOT_AVAILABLE'){
+      if(payload.id == self.ourID){
+        Log.log("received no data available for refresh")
+        self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
       }
     }
   },

@@ -1,13 +1,12 @@
 /* Magic Mirror
- * Module: WaterLevels
+ * Module: MyCovid19
  *
- * Node_helper written by sdetweil
+ * Node_helper written by sdetweil@gmail.com
  *  
  */
 const NodeHelper = require('node_helper');
 const request = require('request');
 const path = require('path')
-const zlib = require('zlib');
 var moment = require('moment');
 var cvt=require("xlsx-to-json")
 var fs=require('fs')
@@ -15,14 +14,11 @@ var fs=require('fs')
 
 module.exports = NodeHelper.create({
 
-    self: 0,
-//    countries_loaded: [],
     country_index: 0,
-//    results: {},
-   // using_chartjs: true,
     suspended: false,
     timer: null,
     lastUpdated: 0,
+    retryCount: 3,
     url:"https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",
 
     start: function () {
@@ -50,27 +46,33 @@ module.exports = NodeHelper.create({
         }, (error, response, body) => {
         if(payload.config.debug)
           console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)
-        if (!error && response.statusCode === 200) {
-              if(payload.config.debug)
-                console.log("have data")
-              fs.writeFileSync(xf,body)
-              cvt({
-                  input: xf,  // input xls
-                  output: null, // output json
-                  //sheet: "sheet1",  // specific sheetname
-                  rowsToSkip: 1 // number of rows to skip at the top of the sheet; defaults to 0
-                }, function(err, result) {
-                  if(err) {
-                    console.error(err);
-                  } else {
-                    fs.unlink(xf, (error) => {
-                      if(!error){
-                        callback(result, payload)
-                      }
-                    })
-                  }
+        if (!error){
+          if(response.statusCode === 200) {
+            if(payload.config.debug)
+              console.log("have data")
+            fs.writeFileSync(xf,body)
+            cvt({
+                input: xf,  // input xls
+                output: null, // output json
+                //sheet: "sheet1",  // specific sheetname
+                rowsToSkip: 1 // number of rows to skip at the top of the sheet; defaults to 0
+              }, function(err, result) {
+                if(err) {
+                  console.error(err);
+                } else {
+                  fs.unlink(xf, (error) => {
+                    if(!error){
+                      callback(result, payload, error)
+                    }
+                  })
                 }
-              )
+              }
+            )
+          }
+          else if(response.statusCode > 400 ){
+            console.log("no file, retry")
+            callback(null, payload, response.statusCode)
+          }
         } else if (error)
           console.log("===>error=" + JSON.stringify(error));
       }
@@ -151,9 +153,15 @@ module.exports = NodeHelper.create({
       if(payload.config.debug)
 			  console.log("getData  elapsed time since last updated="+elapsed+" init="+init);
       if ((elapsed>= payload.config.updateInterval) || init==true) {
-   	    self.getInitialData(self.url, payload, function (data) {
-          //if(payload.config.debug) console.log("data data="+JSON.stringify(data))
-    	    self.doGetcountries(init, payload, data);
+   	    self.getInitialData(self.url, payload, function (data, payload, error) {
+          if(error){            
+            console.log("sending no data available notification")
+            self.sendSocketNotification('NOT_AVAILABLE', {id:payload.id, data:null})
+          }
+          else {
+           //if(payload.config.debug) console.log("data data="+JSON.stringify(data))
+    	     self.doGetcountries(init, payload, data);
+          }
       	});
 			}
     },
@@ -172,6 +180,5 @@ module.exports = NodeHelper.create({
         self.suspended = false;
         //self.getData(false);
       }
-
     },
   });
