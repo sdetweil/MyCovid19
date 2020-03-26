@@ -29,6 +29,9 @@ module.exports = NodeHelper.create({
 
     getInitialData: function (url, payload,  callback) {
       var date = new Date();
+      if(payload.config.useYesterdaysData){
+        date.setDate(date.getDate()-1);
+      }
       var today= date.getFullYear()+"-"+("0"+(date.getMonth()+1)).substring(-2)+"-"+date.getDate() + ".xlsx"
       var texturl= url + today
       if(payload.config.debug)

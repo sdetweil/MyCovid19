@@ -25,7 +25,7 @@ Module.register("MyCovid19", {
     YaxisLabel:"Count",
     chart_type:"cumulative_cases",
     backgroundColor: 'black',
-
+    newFileAvailableTimeofDay:5,
   },
   ourID: null, 
   ticklabel:null,
@@ -37,9 +37,10 @@ Module.register("MyCovid19", {
   suspended: false,
   charts: [null, null],
   pointColors: [],
-  newFileAvailableTimeofDay:5,
   retryDelay: 15,
   timeout_handle:null,
+  displayedOnce:false,
+  useYesterdaysData:false,  
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
@@ -68,8 +69,10 @@ Module.register("MyCovid19", {
           // code block
       }
     }
+    // initialize flag for data recovery
+    self.config.useYesterdaysData=false
     self.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
-    self.setTimerForNextRefresh(self, self.newFileAvailableTimeofDay, 'hours');
+    self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
   
   },
   setTimerForNextRefresh(self, offset, type){
@@ -125,7 +128,8 @@ Module.register("MyCovid19", {
         if(!this.our_data)
          return self.wrapper;
       }
-
+      self.displayedOnce=true;
+      self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
       for (var country_index in self.config.countries) {
         // get the country text name. used for index into the our_data hash
@@ -265,22 +269,6 @@ Module.register("MyCovid19", {
                       fontColor: 'white'
                     },
                   },
-                 /* {
-                    display: true,
-                    position: 'right',   
-                    ticks: {
-                      beginAtZero: true,
-                      source: 'data',
-                      min: self.config.ranges.min,
-                      suggestedMax: self.config.ranges.max,
-                      stepSize: self.config.ranges.stepSize,
-                      fontColor: 'white'
-                    },
-                    gridLines: {
-                        display: false,
-                        drawTicks: false
-                    }
-                  } */
                 ]
               },
             }
@@ -312,12 +300,17 @@ Module.register("MyCovid19", {
           this.ticklabel.push(last_date)
         if(!self.suspended)
           self.updateDom(this.config.initialLoadDelay);
-        self.setTimerForNextRefresh(self, self.newFileAvailableTimeofDay, 'hours');
+        self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
       }
     } else if(notification==='NOT_AVAILABLE'){
       if(payload.id == self.ourID){
         Log.log("received no data available for refresh")
-        self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
+        if(self.displayedOnce)
+          self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
+        else{
+          self.config.useYesterdaysData=true;
+          self.refreshData(self)
+        }
       }
     }
   },
