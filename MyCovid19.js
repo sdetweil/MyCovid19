@@ -126,9 +126,12 @@ Module.register("MyCovid19", {
       // make sure we don't start before the our_data gets here
       if (!this.loaded) {
         this.loaded = true;
-        if(!this.our_data)
-         return self.wrapper;
+        if(!this.our_data){
+          self.wrapper.innerText=this.name+" Loading data for chart \""+self.config.chart_type+"\""
+          return self.wrapper;
+        } 
       }
+      self.wrapper.innerText=null
       self.displayedOnce=true;
       self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
