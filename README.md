@@ -47,8 +47,8 @@ all options are case sensitive
 | --- | --- | --- | --- |
 | `countries` | REQUIRED | '' | the list of countries for which you would like the chart to report |
 | `line_colors` | REQUIRED | '' | an array of colors to represent the individual country data|
-| `chart_type` | OPTIONAL | 'cumulative cases' | cases reported by country |
-|        |          |'cumulative deaths' |  deaths reported by country |
+| `chart_type` | OPTIONAL | 'cumulative_cases' | cases reported by country |
+|        |          |'cumulative_deaths' |  deaths reported by country |
 |        |          |'cases' | new cases reported by day by country |
 |        |          |'deaths' | new deaths reported by day by country |
 | `chart_title | `REQUIRED` | none | title over the chart data |
