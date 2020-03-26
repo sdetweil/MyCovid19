@@ -126,8 +126,9 @@ module.exports = NodeHelper.create({
             cases=cases.reverse()
             deaths=deaths.reverse()
             // initialize cumulative counters to 0
-            tcases=cases
-            tdeaths=deaths
+            // make a copy
+            tcases=JSON.parse(JSON.stringify(cases))
+            tdeaths=JSON.parse(JSON.stringify(deaths))
             // loop thru data and create cumulative counters
             for(var i=1 ; i< cases.length; i++){
               tcases[i].y+=tcases[i-1].y;
