@@ -41,6 +41,7 @@ Module.register("MyCovid19", {
   timeout_handle:null,
   displayedOnce:false,
   useYesterdaysData:false,  
+  waitingforTodaysData:false,
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
@@ -292,6 +293,7 @@ Module.register("MyCovid19", {
         var last_item=this.our_data[keys[0]];
         var last_date=last_item['cases'][last_item['cases'].length-1].x;
         const myMoment = moment(last_date, 'MM/DD/YYY')
+        const now=moment()
         this.ticklabel=this.startLabel.slice()
         for(var i=myMoment.month()+1; i>3; i++){
            this.ticklabel.push(i+"/1/2020")
@@ -300,15 +302,20 @@ Module.register("MyCovid19", {
           this.ticklabel.push(last_date)
         if(!self.suspended)
           self.updateDom(this.config.initialLoadDelay);
-        self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
+        if(self.waitingforTodaysData)
+          self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
+        else
+          self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
       }
     } else if(notification==='NOT_AVAILABLE'){
       if(payload.id == self.ourID){
         Log.log("received no data available for refresh")
+        self.waitingforTodaysData=false
         if(self.displayedOnce)
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         else{
           self.config.useYesterdaysData=true;
+          self.waitingforTodaysData=true          
           self.refreshData(self)
         }
       }
