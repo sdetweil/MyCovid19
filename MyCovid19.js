@@ -26,6 +26,14 @@ Module.register("MyCovid19", {
     chart_type:"cumulative_cases",
     backgroundColor: 'black',
     newFileAvailableTimeofDay:5,
+    legendTextColor:'white',
+    xAxisTickLabelColor:'white',
+    yAxisTickLabelColor:'white',
+    xAxisLabelColor:'white',
+    yAxisLabelColor:'white',
+    chartTitleColor: 'white',
+    xAxisLabel:"by date",
+    yAxisLabel:"Count",
   },
   ourID: null, 
   ticklabel:null,
@@ -182,8 +190,7 @@ Module.register("MyCovid19", {
                    fill: false,
                    borderColor: self.config.line_colors[x], // Add custom color border (Line)
                    label: self.config.countrylist[x],
-                   showInLegend: true, 
-                   //backgroundColor:self.our_data[this_country].gradient //self.pointColors[country_index]  //'#2196f3',
+                   showInLegend: true,                    
             })
           }  
         }
@@ -199,11 +206,15 @@ Module.register("MyCovid19", {
               title:{
                 display: true, 
                 text: self.config.chart_title,   
+                fontColor: self.config.chartTitleColor,
               },              
               legend: {
                 display: true,
                 position:'bottom',    
-                textAlign: 'right',    
+                textAlign: 'right',
+                labels: {
+                 fontColor: self.config.legendTextColor,
+                }
               },
               tooltips: {
                 enabled: true,
@@ -227,8 +238,8 @@ Module.register("MyCovid19", {
                     distribution: 'linear',
                     scaleLabel: {
                       display: true,
-                      labelString: "by date",
-                      fontColor: 'white'
+                      labelString: self.config.xAxisLabel,
+                      fontColor: self.config.xAxisLabelColor,
                     }, 
                     gridLines: {
                       display: false,
@@ -245,6 +256,7 @@ Module.register("MyCovid19", {
                       source: 'labels',
                       maxTicksLimit: 10, //self.our_data[this_country].length,
                       autoSkip: true,
+                      fontColor: self.config.xAxisTickLabelColor,                      
                     },
                   }
                 ],
@@ -253,8 +265,8 @@ Module.register("MyCovid19", {
                     display: true,
                     scaleLabel: {
                       display: true,
-                      labelString: self.config.YaxisLabel,
-                      fontColor: 'white'
+                      labelString: self.config.yAxisLabel,
+                      fontColor: self.config.yAxisLabelColor,
                     },
                     gridLines: {
                       display: false,
@@ -270,7 +282,7 @@ Module.register("MyCovid19", {
                       min: self.config.ranges.min,
                       suggestedMax: self.config.ranges.max,
                       stepSize: self.config.ranges.stepSize,
-                      fontColor: 'white'
+                      fontColor: self.config.yAxisTickLabelColor
                     },
                   },
                 ]
