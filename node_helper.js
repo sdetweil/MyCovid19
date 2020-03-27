@@ -42,15 +42,15 @@ module.exports = NodeHelper.create({
         {
           url: texturl,
           encoding: null,
-          headers: {
-            'Accept-Encoding': 'gzip'
-          },
-          gzip: true,
+          //headers: {
+          //  'Accept-Encoding': 'gzip'
+          //},
+          //gzip: true,
           method: 'GET'
         }, (error, response, body) => {
-        if(payload.config.debug)
-          console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)
         if (!error){
+          if(payload.config.debug)
+            console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)          
           if(response.statusCode === 200) {
             if(payload.config.debug)
               console.log("have data")
@@ -70,7 +70,7 @@ module.exports = NodeHelper.create({
             console.log("no file, retry")
             callback(null, payload, response.statusCode)
           }
-        } else if (error) {
+        } else {
           console.log("===>error=" + JSON.stringify(error));
           callback(null, payload, error)
         }
@@ -143,7 +143,7 @@ module.exports = NodeHelper.create({
           // send the data on to the display module
         //if(payload.config.debug) console.log("data="+JSON.stringify(results))
         if(payload.config.debug) console.log("sending data back to module="+payload.id)
-        self.sendSocketNotification('Data', {id:payload.id, data:results})
+        self.sendSocketNotification('Data', {id:payload.id, config:payload.config, data:results})
       }
     },
     getData: function (init, payload) {
@@ -156,7 +156,7 @@ module.exports = NodeHelper.create({
    	    self.getInitialData(self.url, payload, function (data, payload, error) {
           if(error){            
             console.log("sending no data available notification")
-            self.sendSocketNotification('NOT_AVAILABLE', {id:payload.id, data:null})
+            self.sendSocketNotification('NOT_AVAILABLE', {id:payload.id, config:payload.config, data:null})
           }
           else {
            //if(payload.config.debug) console.log("data data="+JSON.stringify(data))

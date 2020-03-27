@@ -61,7 +61,7 @@ Module.register("MyCovid19", {
     self.ourID = self.identifier+"_"+Math.floor(Math.random() * 1000) + 1;
     //  Set locale.
     moment.locale(config.language);
-    if(this.config.debug) console.log("config =" + JSON.stringify(this.config));
+    if(this.config.debug) Log.log("config =" + JSON.stringify(this.config));
     this.config.countrylist=this.config.countries.slice()    
     for(var i in this.config.countries){
       switch(this.config.countries[i].toLowerCase()) {
@@ -92,7 +92,7 @@ Module.register("MyCovid19", {
       next_time=moment().add(offset,type)
    // if(self.config.debug)
     var millis=next_time.diff(moment())
-    console.log("timeout diff ="+ millis)
+    Log.log("timeout diff ="+ millis)
     if(self.timeout_handle){
       Log.log("clearing timer")
       clearTimeout(self.timeout_handle)
@@ -302,15 +302,16 @@ Module.register("MyCovid19", {
     var self = this
     if (notification === 'Data') {
       if(payload.id == self.ourID){
-        if(this.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
+        if(payload.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
         this.our_data = payload.data
         var keys=Object.keys(this.our_data);
         var last_item=this.our_data[keys[0]];
         var last_date=last_item['cases'][last_item['cases'].length-1].x;
         const lastMoment = moment(last_date, 'MM/DD/YYYY')
         const now=moment()
+        const currentMoment=now.format("MM/DD/YYYY")
         // if the last data element date matches today, data is good
-        if(lastMoment == now.format('MM/DD/YYYY') || self.displayedOnce==false){          
+        if(lastMoment.format('MM/DD/YYY') == currentMoment || self.displayedOnce==false){          
           this.ticklabel=this.startLabel.slice()
           for(var i=lastMoment.month()+1; i>3; i++){
              this.ticklabel.push(i+"/1/2020")
@@ -320,7 +321,9 @@ Module.register("MyCovid19", {
           if(!self.suspended)
             self.updateDom(this.config.initialLoadDelay);
         }
-        if(lastMoment != now.format("MM/DD/YYYY") ){
+        if(payload.config.debug)
+          Log.log("comparing last="+lastMoment.format('MM/DD/YYYY')+" with current="+currentMoment)
+        if(lastMoment.format('MM/DD/YYYY') !== currentMoment ){
           self.waitingforTodaysData=true 
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         }
@@ -331,7 +334,8 @@ Module.register("MyCovid19", {
       }
     } else if(notification==='NOT_AVAILABLE'){
       if(payload.id == self.ourID){
-        Log.log("received no data available for refresh")
+        if(payload.config.debug)
+          Log.log("received no data available for refresh")
         self.waitingforTodaysData=false
         if(self.displayedOnce)
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
