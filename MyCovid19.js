@@ -307,20 +307,20 @@ Module.register("MyCovid19", {
         var keys=Object.keys(this.our_data);
         var last_item=this.our_data[keys[0]];
         var last_date=last_item['cases'][last_item['cases'].length-1].x;
-        const myMoment = moment(last_date, 'MM/DD/YYYY')
+        const lastMoment = moment(last_date, 'MM/DD/YYYY')
         const now=moment()
         // if the last data element date matches today, data is good
-        if(myMoment == now.format('MM/DD/YYYY') || self.displayedOnce==false){          
+        if(lastMoment == now.format('MM/DD/YYYY') || self.displayedOnce==false){          
           this.ticklabel=this.startLabel.slice()
-          for(var i=myMoment.month()+1; i>3; i++){
+          for(var i=lastMoment.month()+1; i>3; i++){
              this.ticklabel.push(i+"/1/2020")
           }
-          if(last_date != (myMoment.month()+1)+'/1/2020')
+          if(last_date != (lastMoment.month()+1)+'/1/2020')
             this.ticklabel.push(last_date)
           if(!self.suspended)
             self.updateDom(this.config.initialLoadDelay);
         }
-        if(myMoment != now.format("MM/DD/YYYY") ){
+        if(lastMoment != now.format("MM/DD/YYYY") ){
           self.waitingforTodaysData=true 
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         }

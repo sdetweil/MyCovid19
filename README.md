@@ -1,7 +1,7 @@
 # MyCovid19
 
 monitor COVID 19 virus stats with line graphs
- 
+
 
 
 ## Dependencies
@@ -28,11 +28,11 @@ monitor COVID 19 virus stats with line graphs
 				//				
 				chart_type:"cumulative_cases",  // or "cumulative deaths"
 				chart_title:"Cumulative Cases", // however u want to label
-				// the vertical steps on the chart.. how tall u want it to be and how mant increments 
+				// the vertical steps on the chart.. how tall u want it to be and how mant increments
 				ranges:{min:0,max:8000,stepSize:10000},
 				// size of the chart in pixels
 			    width: 400,
-			    height: 500,	
+			    height: 500,
 			    // only used if we need to debug something
 			    debug:false,
 			}
@@ -43,7 +43,7 @@ monitor COVID 19 virus stats with line graphs
 
 all options are case sensitive
 
-| **Option** | **Default** | **Default** | **Info** 
+| **Option** | **Default** | **Default** | **Info**
 | --- | --- | --- | --- |
 | `countries` | REQUIRED | '' | the list of countries for which you would like the chart to report |
 | `line_colors` | REQUIRED | '' | an array of colors to represent the individual country data|
@@ -51,11 +51,18 @@ all options are case sensitive
 |        |          |'cumulative_deaths' |  deaths reported by country |
 |        |          |'cases' | new cases reported by day by country |
 |        |          |'deaths' | new deaths reported by day by country |
-| `chart_title | `REQUIRED` | none | title over the chart data |
-  `ranges` | `REQUIRED` | ''| the Y axis size and step rate ) |
+| `ranges` | `REQUIRED` | ''| the Y axis size and step rate ) |
+||example|	ranges:{min:0,max:10000,stepSize:2000},""
 | `width` | `OPTIONAL` | '400'  |  width of the output chart |
 | `height` | `OPTIONAL`| '400' | height of the output chart |
 | `backgroundColor` | `OPTIONAL` | 'black' | background of chart |
-
-
-
+| `legendTextColor` | `OPTIONAL` | 'white' | |
+| `chart_title`| `OPTIONAL` | '' | title over the chart data |
+| `chartTitleColor`| `OPTIONAL` | 'white' | |    
+| `xAxisLabel`| `OPTIONAL` | 'by date' | |
+| `xAxisLabelColor`| `OPTIONAL` | 'white' | |
+| `xAxisTickLabelColor`| `OPTIONAL` | 'white' | |
+| `yAxisLabel`| `OPTIONAL` | 'Count' | |
+| `yAxisLabelColor`| `OPTIONAL` | 'white' | |
+| `yAxisTickLabelColor`| `OPTIONAL` | 'white' | |
+| `debug` | `OPTIONAL` | false ||
