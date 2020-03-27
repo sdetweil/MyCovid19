@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "chart.js": "2.5.0",
-    "path": "^0.12.7",
+    "csvtojson": "^2.0.10",
+    "fs": "latest",
     "moment": "^2.23.0",
-    "xlsx-to-json":"latest",
-    "fs":"latest"
+    "path": "^0.12.7"
   }
 }

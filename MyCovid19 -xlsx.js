@@ -24,7 +24,7 @@ Module.register("MyCovid19", {
     labels:['days'],
     chart_type:"cumulative_cases",
     backgroundColor: 'black',
-    newFileAvailableTimeofDay:2,
+    newFileAvailableTimeofDay:5,
     legendTextColor:'white',
     xAxisTickLabelColor:'white',
     yAxisTickLabelColor:'white',
@@ -307,27 +307,20 @@ Module.register("MyCovid19", {
         var keys=Object.keys(this.our_data);
         var last_item=this.our_data[keys[0]];
         var last_date=last_item['cases'][last_item['cases'].length-1].x;
-        const myMoment = moment(last_date, 'MM/DD/YYYY')
+        const myMoment = moment(last_date, 'MM/DD/YYY')
         const now=moment()
-        // if the last data element date matches today, data is good
-        if(myMoment == now.format('MM/DD/YYYY') || self.displayedOnce==false){          
-          this.ticklabel=this.startLabel.slice()
-          for(var i=myMoment.month()+1; i>3; i++){
-             this.ticklabel.push(i+"/1/2020")
-          }
-          if(last_date != (myMoment.month()+1)+'/1/2020')
-            this.ticklabel.push(last_date)
-          if(!self.suspended)
-            self.updateDom(this.config.initialLoadDelay);
+        this.ticklabel=this.startLabel.slice()
+        for(var i=myMoment.month()+1; i>3; i++){
+           this.ticklabel.push(i+"/1/2020")
         }
-        if(myMoment != now.format("MM/DD/YYYY") ){
-          self.waitingforTodaysData=true 
+        if(last_date != (myMoment.month()+1)+'/1/2020')
+          this.ticklabel.push(last_date)
+        if(!self.suspended)
+          self.updateDom(this.config.initialLoadDelay);
+        if(self.waitingforTodaysData)
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
-        }
-        else{
-          self.waitingforTodaysData=false;
+        else
           self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
-        }
       }
     } else if(notification==='NOT_AVAILABLE'){
       if(payload.id == self.ourID){
@@ -336,6 +329,7 @@ Module.register("MyCovid19", {
         if(self.displayedOnce)
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         else{
+          self.config.useYesterdaysData=true;
           self.waitingforTodaysData=true          
           self.refreshData(self)
         }

@@ -8,7 +8,8 @@ const NodeHelper = require('node_helper');
 const request = require('request');
 const path = require('path')
 var moment = require('moment');
-var cvt=require("xlsx-to-json")
+//const cvt=require("xlsx-to-json")
+const cvt=require('csvtojson')
 var fs=require('fs')
 
 
@@ -19,7 +20,7 @@ module.exports = NodeHelper.create({
     timer: null,
     lastUpdated: 0,
     retryCount: 3,
-    url:"https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",
+    url:"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
 
     start: function () {
       console.log("Starting module: " + this.name);
@@ -32,11 +33,11 @@ module.exports = NodeHelper.create({
       if(payload.config.useYesterdaysData){
         date.setDate(date.getDate()-1);
       }
-      var today= date.getFullYear()+"-"+("0"+(date.getMonth()+1)).substring(-2)+"-"+date.getDate() + ".xlsx"
-      var texturl= url + today
+      //var today= date.getFullYear()+"-"+("0"+(date.getMonth()+1)).substring(-2)+"-"+date.getDate() + ".xlsx"
+      var texturl= url 
       if(payload.config.debug)
         console.log("fn="+texturl)
-      var xf="rawdata"+"-"+payload.id+"_"+today      
+      var xf="rawdata"+"-"+payload.id  
       request(
         {
           url: texturl,
@@ -54,21 +55,14 @@ module.exports = NodeHelper.create({
             if(payload.config.debug)
               console.log("have data")
             fs.writeFileSync(xf,body)
-            cvt({
-                input: xf,  // input xls
-                output: null, // output json
-                //sheet: "sheet1",  // specific sheetname
-                rowsToSkip: 1 // number of rows to skip at the top of the sheet; defaults to 0
-              }, function(err, result) {
-                if(err) {
-                  console.error(err);
-                } else {
+
+            cvt().fromFile(xf)  // input xls
+              .then((result) =>{
                   fs.unlink(xf, (error) => {
-                    if(!error){
-                      callback(result, payload, error)
-                    }
+                    if(payload.config.debug)
+                      console.log("erased file ="+xf)
                   })
-                }
+                  callback(result, payload, null)                  
               }
             )
           }
@@ -76,8 +70,10 @@ module.exports = NodeHelper.create({
             console.log("no file, retry")
             callback(null, payload, response.statusCode)
           }
-        } else if (error)
+        } else if (error) {
           console.log("===>error=" + JSON.stringify(error));
+          callback(null, payload, error)
+        }
       }
       );
     },
@@ -100,7 +96,7 @@ module.exports = NodeHelper.create({
         var   country= {}
 
         for(var entry of data){
-            let v = entry["Countries and territories"]
+            let v = entry["countriesAndTerritories"]
             //console.log(" country geo="+JSON.stringify(entry))
             if(country[v]==undefined)
               country[v]=[]
@@ -117,9 +113,9 @@ module.exports = NodeHelper.create({
 
             for(var u of country[c]){
                //console.log("date="+u.DateRep+" cases="+u.Cases+" deaths="+u.Deaths+" geoid="+u.GeoId)
-               if(u.DateRep.endsWith("20")){
-                 cases.push({ x: u.DateRep+"20", y:parseInt(u.Cases)})
-                 deaths.push({ x: u.DateRep+"20", y:parseInt(u.Deaths)})
+               if(u.dateRep.endsWith("20")){
+                 cases.push({ x: moment(u.dateRep,"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u.cases)})
+                 deaths.push({ x: moment(u.dateRep,"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u.deaths)})
                }
             }
             // data presented in reverse dsate order, flip them
