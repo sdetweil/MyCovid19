@@ -50,6 +50,8 @@ Module.register("MyCovid19", {
   displayedOnce:false,
   useYesterdaysData:false,  
   waitingforTodaysData:false,
+  initialLoadDelay: 2000,   
+  test:0,
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
@@ -303,31 +305,61 @@ Module.register("MyCovid19", {
     if (notification === 'Data') {
       if(payload.id == self.ourID){
         if(payload.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
+        // get pointer to data from payload
         this.our_data = payload.data
-        var keys=Object.keys(this.our_data);
-        var last_item=this.our_data[keys[0]];
-        var last_date=last_item['cases'][last_item['cases'].length-1].x;
-        const lastMoment = moment(last_date, 'MM/DD/YYYY')
-        const now=moment()
-        const currentMoment=now.format("MM/DD/YYYY")
-        // if the last data element date matches today, data is good
-        if(lastMoment.format('MM/DD/YYY') == currentMoment || self.displayedOnce==false){          
-          this.ticklabel=this.startLabel.slice()
-          for(var i=lastMoment.month()+1; i>3; i++){
-             this.ticklabel.push(i+"/1/2020")
+        // get the list of countries  
+        var countries=Object.keys(this.our_data);
+        //  get the data for the 1st country, all symetrical
+        var first_country_data=this.our_data[countries[0]];
+        Log.log("test flag="+self.test)
+        if(self.test-- >0){
+          Log.log("forcing old date");
+          for(var c of countries){
+             // for testing,  remove last entry, to force retry
+             this.our_data[c]['cases'].splice(-1,1)
+             this.our_data[c]['deaths'].splice(-1,1)
+             this.our_data[c]['cumulative_cases'].splice(-1,1)
+             this.our_data[c]['cumulative_deaths'].splice(-1,1)
           }
+        }
+        // get the date from the last entry of cases
+        var last_date=first_country_data['cases'].slice(-1)[0].x;        
+        // convert to moment, in mm/dd/yyyy layout 
+        const lastMoment = moment(last_date, 'MM/DD/YYYY')
+        // get now as a moment
+        const now=moment()
+        // get just the date of now
+        const currentMoment_date=now.format("MM/DD/YYYY")
+        // if the last data element date matches today, data is current        
+        if(lastMoment.format('MM/DD/YYYY') == currentMoment_date || self.displayedOnce==false){          
+          // make a copy of te tick labels
+          this.ticklabel=this.startLabel.slice()
+          // if the last data point in the data is greater than the development time of this module
+          for(var i=lastMoment.month()+1; i>3; i++){
+            // add entries for each month 
+            this.ticklabel.push(i+"/1/2020")
+          }
+          // if the last date in the data isn't a month boundary
           if(last_date != (lastMoment.month()+1)+'/1/2020')
+            // add the specific date entry to the list of ticks to display
+            // the month would have been added by the loop above
             this.ticklabel.push(last_date)
+          // if we are no suspended  
           if(!self.suspended)
-            self.updateDom(this.config.initialLoadDelay);
+            // call to get mm to ask us for new charts
+            self.updateDom(payload.config.initialLoadDelay);
         }
         if(payload.config.debug)
-          Log.log("comparing last="+lastMoment.format('MM/DD/YYYY')+" with current="+currentMoment)
-        if(lastMoment.format('MM/DD/YYYY') !== currentMoment ){
+          Log.log("comparing last="+lastMoment.format('MM/DD/YYYY')+" with current="+currentMoment_date)
+        if(lastMoment.format('MM/DD/YYYY') !== currentMoment_date ){
+          if(payload.config.debug)
+            Log.log("have data last entry does NOT match today "+currentMoment_date)
           self.waitingforTodaysData=true 
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         }
         else{
+          if(payload.config.debug)
+            Log.log("have data last entry  DOES match today "+currentMoment_date)          
           self.waitingforTodaysData=false;
           self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
         }
