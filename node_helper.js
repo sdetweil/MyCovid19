@@ -14,7 +14,7 @@ var fs=require('fs')
 
 
 module.exports = NodeHelper.create({
-
+    fields:['date','cases','deaths','countries','geoid'],
     country_index: 0,
     suspended: false,
     timer: null,
@@ -77,8 +77,23 @@ module.exports = NodeHelper.create({
       }
       );
     },
-
-     doGetcountries: function (init, payload, data) {
+    unique: function(list, name, payload) {
+      var self=this
+      var result = null;
+      if(payload.config.debug1)
+        console.log("looking for "+name+" in "+JSON.stringify(list))
+      list.forEach(function(e) {
+        if(e.toLowerCase().indexOf(name.toLowerCase())>=0){       
+          
+          if(payload.config.debug1)
+            console.log("returning "+e)
+          result=e;
+        }
+      });
+      
+      return result;
+    },
+    doGetcountries: function (init, payload, data) {
       // if we are not suspended, and the last time we updated was at least the delay time,
       // then update again
 			var now=moment()
@@ -94,9 +109,15 @@ module.exports = NodeHelper.create({
 
         // format data keyed by country name
         var   country= {}
+        var fieldNames=Object.keys(data[0]);
+        if(payload.config.debug1)
+          console.log("fieldnames="+JSON.stringify(fieldNames))        
+        for(var i in self.fields){
+          this.fields[i]=self.unique(fieldNames,self.fields[i], payload)
+        }        
 
         for(var entry of data){
-            let v = entry["countriesAndTerritories"]
+            let v = entry[this.fields[3]]
             //console.log(" country geo="+JSON.stringify(entry))
             if(country[v]==undefined)
               country[v]=[]
@@ -112,10 +133,11 @@ module.exports = NodeHelper.create({
             var tcases=[]; var tdeaths=[];
 
             for(var u of country[c]){
-               //console.log("date="+u.DateRep+" cases="+u.Cases+" deaths="+u.Deaths+" geoid="+u.GeoId)
+              if(payload.config.debug1)
+               console.log("date="+u[this.fields[0]]+" cases="+u[this.fields[1]]+" deaths="+u[this.fields[2]]+" geoid="+u[this.fields[4]])
                if(u.dateRep.endsWith("20")){
-                 cases.push({ x: moment(u.dateRep,"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u.cases)})
-                 deaths.push({ x: moment(u.dateRep,"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u.deaths)})
+                 cases.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[1]])})
+                 deaths.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[2]])})
                }
             }
             // data presented in reverse dsate order, flip them

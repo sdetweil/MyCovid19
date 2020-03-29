@@ -19,6 +19,7 @@
     "csvtojson": "^2.0.10",
     "fs": "latest",
     "moment": "^2.23.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "xlsx-to-json":"latest"
   }
 }

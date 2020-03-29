@@ -15,25 +15,29 @@ Module.register("MyCovid19", {
     width: 500,
     height: 500,
     updateInterval: 5,
-    dayrange: 7,
-    pinLimits: [0,1800],
     skipInfo: 5,
 		display_colors: ['#2196f3','#ff0000'],
     debug:false,
     stacked:false,
-    labels:['days'],
+    //labels:['days'],
     chart_type:"cumulative_cases",
-    backgroundColor: 'black',
     newFileAvailableTimeofDay:2,
-    legendTextColor:'white',
-    xAxisTickLabelColor:'white',
-    yAxisTickLabelColor:'white',
-    xAxisLabelColor:'white',
-    yAxisLabelColor:'white',
-    chartTitleColor: 'white',
+
     chart_title:'',
     xAxisLabel:"by date",
     yAxisLabel:"Count",
+
+    // colors
+    backgroundColor: 'black',   
+    chartTitleColor: 'white',
+    legendTextColor:'white',
+
+    xAxisLabelColor:'white',    
+    xAxisTickLabelColor:'white',
+
+    yAxisLabelColor:'white',    
+    yAxisTickLabelColor:'white',    
+
   },
   ourID: null, 
   ticklabel:null,
@@ -51,6 +55,7 @@ Module.register("MyCovid19", {
   useYesterdaysData:false,  
   waitingforTodaysData:false,
   initialLoadDelay: 2000,   
+  tickLabel:[],
   test:0,
 
   getScripts: function () {
@@ -184,6 +189,7 @@ Module.register("MyCovid19", {
             div.appendChild(canvas);
         }
         var ds = []
+
         for(var x in self.config.countries){
           if(self.our_data[self.config.countries[x]] != undefined){
             ds.push({
@@ -196,27 +202,20 @@ Module.register("MyCovid19", {
             })
           }  
         }
-                // create it now
-        self.charts[country_index] = new Chart(canvas, {
-            type: 'line',
-            showLine: true,
+        var chartOptions= {
 
-            data: {
-              datasets: ds
-            },
-            options: {
               title:{
                 display: true, 
                 text: self.config.chart_title,   
-                fontColor: self.config.chartTitleColor,
+
               },              
               legend: {
                 display: true,
                 position:'bottom',    
-                textAlign: 'right',
-                labels: {
-                 fontColor: self.config.legendTextColor,
-                }
+                textAlign: 'right',  
+
+
+
               },
               tooltips: {
                 enabled: true,
@@ -241,7 +240,7 @@ Module.register("MyCovid19", {
                     scaleLabel: {
                       display: true,
                       labelString: self.config.xAxisLabel,
-                      fontColor: self.config.xAxisLabelColor,
+
                     }, 
                     gridLines: {
                       display: false,
@@ -254,11 +253,10 @@ Module.register("MyCovid19", {
                     ticks: {
                       display: true,
                       maxRotation:90,
-                      labels: self.ticklabel,
+                      //labels: self.ticklabel,
                       source: 'labels',
-                      maxTicksLimit: 10, //self.our_data[this_country].length,
-                      autoSkip: true,
-                      fontColor: self.config.xAxisTickLabelColor,                      
+                      maxTicksLimit: (self.ticklabel.length*2)+3, //10, //self.our_data[this_country].length,
+                      autoSkip: true,   
                     },
                   }
                 ],
@@ -268,14 +266,14 @@ Module.register("MyCovid19", {
                     scaleLabel: {
                       display: true,
                       labelString: self.config.yAxisLabel,
-                      fontColor: self.config.yAxisLabelColor,
+
                     },
                     gridLines: {
                       display: false,
-                      color: "#FFFFFF",
-                      zeroLineColor: '#ffcc33',
-                      fontColor: 'white',
-                      scaleFontColor: 'white',
+                     // color: "#FFFFFF",
+                     // zeroLineColor: '#ffcc33',
+                     // fontColor: 'white',
+                     // scaleFontColor: 'white',
                     },
 
                     ticks: {
@@ -284,12 +282,22 @@ Module.register("MyCovid19", {
                       min: self.config.ranges.min,
                       suggestedMax: self.config.ranges.max,
                       stepSize: self.config.ranges.stepSize,
-                      fontColor: self.config.yAxisTickLabelColor
+
                     },
                   },
                 ]
               },
             }
+        self.updateOptions(self.config, chartOptions)
+                // create it now
+        self.charts[country_index] = new Chart(canvas, {
+            type: 'line',
+            showLine: true,
+            data: {
+              datasets: ds,
+              labels: self.ticklabel,
+            },
+            options: chartOptions, 
           }
         );
         break;
@@ -341,7 +349,7 @@ Module.register("MyCovid19", {
           }
           // if the last date in the data isn't a month boundary
           if(last_date != (lastMoment.month()+1)+'/1/2020')
-            // add the specific date entry to the list of ticks to display
+            // add the specific date entry to the list of Label to display
             // the month would have been added by the loop above
             this.ticklabel.push(last_date)
           // if we are no suspended  
@@ -378,5 +386,106 @@ Module.register("MyCovid19", {
       }
     }
   },
+  updateOptions(config, chartOptions){
+    var defaults=false;
+        var defaultFontInfo = {      
+              global:{
+              //  defaultColor : 'yourColor',
+              //  defaultFontColor : 'yourColor',
+              //  defaultFontFamily : 'yourFont',
+              //  defaultFontSize:14
+              }                
+        }    
+// defaults
+
+    if(config.defaultColor){
+      defaultFontInfo.global['defaultColor']=config.defaultColor
+      defaults=true
+    }
+    if(config.defaultFontColor){
+      defaultFontInfo.global['defaultFontColor']=config.defaultFontColor
+      defaults=true
+    }    
+    if(config.defaultFontName){
+      defaultFontInfo.global['defaultFontFamily']=config.defaultFontName
+      defaults=true
+    }   
+    if(config.defaultFontSize){
+      defaultFontInfo.global['defaultFontSize']=config.defaultFontSize
+      defaults=true
+    }   
+    if(defaults)    {
+      chartOptions['defaults']= defaultFontInfo
+    }
+// chart title
+
+    if(config.titleFontFamily!=undefined)
+      chartOptions.title.fontFamily=config.titleFontFamily
+    if(config.titleFontSize!=undefined)
+      chartOptions.title.fontSize=config.titleFontSize
+    if(config.titleFontStyle!=undefined)
+      chartOptions.title.fontStyle=config.titleFontStyle
+    if(config.chartTitleColor)
+      chartOptions.title.fontColor=config.chartTitleColor
+
+// chart legend
+
+    if(config.legendFontFamily!=undefined)
+      chartOptions.legend.fontFamily=config.legendFontFamily
+    if(config.legendFontSize!=undefined)
+      chartOptions.legend.fontSize=config.legendFontSize
+    if(config.legendFontStyle!=undefined)
+      chartOptions.legend.fontStyle=config.legendFontStyle
+    if(config.legendTextColor){
+      var labels = { fontColor: config.legendTextColor}
+      chartOptions.legend['labels']= labels
+    }
+
+// xAxes label
+
+    if(config.xAxisLabelColor !=undefined)
+      chartOptions.scales.xAxes[0].scaleLabel.fontColor=config.xAxisLabelColor
+    if(config.xAxisLabelFontFamily!=undefined)
+      chartOptions.scales.xAxes[0].scaleLabel.fontFamily= config.xAxisLabelFontFamily
+    if(config.xAxisLabelFontSize!=undefined)
+      chartOptions.scales.xAxes[0].scaleLabel.fontSize= config.xAxisLabelFontSize
+    if(config.xAxisLabelFontStyle!=undefined)
+      chartOptions.scales.xAxes[0].scaleLabel.fontStyle= config.xAxisLabelFontStyle    
+
+// xAxes ticks
+
+    if(config.xAxisTickLabelColor!=undefined)
+      chartOptions.scales.xAxes[0].ticks.fontColor= config.xAxisTickLabelColor
+    if(config.xAxisTickLabelFontFamily!=undefined)
+      chartOptions.scales.xAxes[0].ticks.fontFamily= config.xAxisTickLabelFontFamily
+    if(config.xAxisTickLabelFontSize!=undefined)
+      chartOptions.scales.xAxes[0].ticks.fontSize= config.xAxisTickLabelFontSize
+    if(config.xAxisTickLabelFontStyle!=undefined)
+      chartOptions.scales.xAxes[0].ticks.fontStyle= config.xAxisTickLabelFontStyle
+
+// yAxes label    
+
+    if(config.yAxisLabelColor !=undefined)
+      chartOptions.scales.yAxes[0].scaleLabel.fontColor=config.yAxisLabelColor
+    if(config.yAxisLabelFontFamily!=undefined)
+      chartOptions.scales.yAxes[0].scaleLabel.fontFamily= config.yAxisLabelFontFamily
+    if(config.yAxisLabelFontSize!=undefined)
+      chartOptions.scales.yAxes[0].scaleLabel.fontSize= config.yAxisLabelFontSize
+    if(config.yAxisLabelFontStyle!=undefined)
+      chartOptions.scales.yAxes[0].scaleLabel.fontStyle= config.yAxisLabelFontStyle    
+
+//yAxes ticks
+
+    if(config.yAxisTickColor!=undefined)
+      chartOptions.scales.yAxes[0].ticks.fontColor= config.yAxisTicklColor
+    if(config.yAxisTickFontFamily!=undefined)
+      chartOptions.scales.yAxes[0].ticks.fontFamily= config.yAxisTickFontFamily
+    if(config.yAxisTickFontSize!=undefined)
+      chartOptions.scales.yAxes[0].ticks.fontSize= config.yAxisTickFontSize
+    if(config.yAxisTickFontStyle!=undefined)
+      chartOptions.scales.yAxes[0].ticks.fontStyle= config.yAxisTickFontStyle    
+
+  }
+
 
 });
