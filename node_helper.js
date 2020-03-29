@@ -117,11 +117,14 @@ module.exports = NodeHelper.create({
         }        
 
         for(var entry of data){
-            let v = entry[this.fields[3]]
+          let v = entry[this.fields[3]]
+          if(payload.config.countries.indexOf(v)>=0){
             //console.log(" country geo="+JSON.stringify(entry))
-            if(country[v]==undefined)
-              country[v]=[]
-            country[v].push(entry)
+            if(country[v]==undefined){
+              country[v]=[]   
+            }        
+            country[v].push(entry)          
+          }
         }
         var results={}
         // loop thru all the configured countries 
@@ -135,10 +138,13 @@ module.exports = NodeHelper.create({
             for(var u of country[c]){
               if(payload.config.debug1)
                console.log("date="+u[this.fields[0]]+" cases="+u[this.fields[1]]+" deaths="+u[this.fields[2]]+" geoid="+u[this.fields[4]])
-               if(u.dateRep.endsWith("20")){
-                 cases.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[1]])})
-                 deaths.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[2]])})
-               }
+              // filter out before startDate
+              if(payload.config.startDate==undefined || !moment(u[this.fields[0]],'DD/MM/YYYY').isBefore(moment(payload.config.startDate,'MM/DD/YYYY'))){ 
+                if(u.dateRep.endsWith("20")){
+                  cases.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[1]])})
+                  deaths.push({ x: moment(u[this.fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[this.fields[2]])})
+                }
+              }
             }
             // data presented in reverse dsate order, flip them
             cases=cases.reverse()
@@ -165,7 +171,7 @@ module.exports = NodeHelper.create({
           // send the data on to the display module
         //if(payload.config.debug) console.log("data="+JSON.stringify(results))
         if(payload.config.debug) console.log("sending data back to module="+payload.id)
-        self.sendSocketNotification('Data', {id:payload.id, config:payload.config, data:results})
+       self.sendSocketNotification('Data', {id:payload.id, config:payload.config, data:results})
       }
     },
     getData: function (init, payload) {

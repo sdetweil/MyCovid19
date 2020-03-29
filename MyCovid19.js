@@ -14,12 +14,9 @@ Module.register("MyCovid19", {
     maxWidth: 800,
     width: 500,
     height: 500,
-    updateInterval: 5,
-    skipInfo: 5,
-		display_colors: ['#2196f3','#ff0000'],
+		//display_colors: ['#2196f3','#ff0000'],
     debug:false,
     stacked:false,
-    //labels:['days'],
     chart_type:"cumulative_cases",
     newFileAvailableTimeofDay:2,
 
@@ -37,11 +34,11 @@ Module.register("MyCovid19", {
 
     yAxisLabelColor:'white',    
     yAxisTickLabelColor:'white',    
+    startLabel: ["1/1/2020", "2/1/2020", "3/1/2020"],
 
   },
   ourID: null, 
   ticklabel:null,
-  startLabel: ["1/1/2020", "2/1/2020", "3/1/2020"],
   url: "",
   loaded: false,
   our_data: null,
@@ -341,7 +338,7 @@ Module.register("MyCovid19", {
         // if the last data element date matches today, data is current        
         if(lastMoment.format('MM/DD/YYYY') == currentMoment_date || self.displayedOnce==false){          
           // make a copy of te tick labels
-          this.ticklabel=this.startLabel.slice()
+          this.ticklabel=this.config.startLabel.slice()
           // if the last data point in the data is greater than the development time of this module
           for(var i=lastMoment.month()+1; i>3; i++){
             // add entries for each month 
