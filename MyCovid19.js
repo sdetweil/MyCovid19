@@ -316,7 +316,8 @@ Module.register("MyCovid19", {
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
         var first_country_data=this.our_data[countries[0]];
-        Log.log("test flag="+self.test)
+        if(payload.config.debug)
+          Log.log("test flag="+self.test)
         if(self.test-- >0){
           Log.log("forcing old date");
           for(var c of countries){
