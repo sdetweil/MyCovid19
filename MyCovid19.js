@@ -338,13 +338,14 @@ Module.register("MyCovid19", {
         const currentMoment_date=now.format("MM/DD/YYYY")
         // if the last data element date matches today, data is current        
         if(lastMoment.format('MM/DD/YYYY') == currentMoment_date || self.displayedOnce==false){          
-          // make a copy of te tick labels
-          this.ticklabel=this.config.startLabel.slice()
-          // if the last data point in the data is greater than the development time of this module
-          for(var i=lastMoment.month()+1; i>3; i++){
-            // add entries for each month 
+
+          // get first tick from the data
+          this.ticklabel=[first_country_data['cases'].slice(1)[0].x]            
+          var  firstdate=moment(this.ticklabel[0],'MM/DD/YYYY')
+          for(var i=firstdate.month()+2; i<=lastMoment.month()+1; i++){
             this.ticklabel.push(i+"/1/2020")
           }
+          
           // if the last date in the data isn't a month boundary
           if(last_date != (lastMoment.month()+1)+'/1/2020')
             // add the specific date entry to the list of Label to display

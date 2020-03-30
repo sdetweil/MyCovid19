@@ -61,7 +61,6 @@ all options are case sensitive
 |||||
 | date filtering ||||
 | `startDate`| `OPTIONAL` | | text data MM/DD/YYYY to start chart data , default is data decides beginning of chart|
-| `startLabel`| `OPTIONAL` | ['1/1/2000','2/1/2020','3/1/2020'] | used to control the x axes tick marks |
 |||||
 | `chart labels`||||
 | `chart_title`| `OPTIONAL` | '' | title over the chart data |
