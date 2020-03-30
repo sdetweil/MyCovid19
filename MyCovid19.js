@@ -9,6 +9,8 @@ Module.register("MyCovid19", {
 
   // Module config defaults.
   defaults: {
+    type:'countries',
+    states:[],
     countries: [],
     line_colors:['red','blue','green','yellow','white'],
     maxWidth: 800,
@@ -66,20 +68,26 @@ Module.register("MyCovid19", {
     //  Set locale.
     moment.locale(config.language);
     if(this.config.debug) Log.log("config =" + JSON.stringify(this.config));
-    this.config.countrylist=this.config.countries.slice()    
-    for(var i in this.config.countries){
-      switch(this.config.countries[i].toLowerCase()) {
-        case 'us':
-        case 'usa':
-        case 'united states':
-          // code block
-          self.config.countries[i]='United_States_of_America'
-          break;
-        case "uk":
-          self.config.countries[i]="United Kingdom" 
-        default:
-           self.config.countries[i]= self.config.countries[i].replace(" ","_")
-          // code block
+    if(this.config.countries.length>0)
+      this.config.type='countries'
+    else
+      this.config.type='states'
+    this.config.countrylist=this.config[self.config.type].slice()    
+    if(self.config.type=='countries'){
+      for(var i in this.config.countries){
+        switch(this.config.countries[i].toLowerCase()) {
+          case 'us':
+          case 'usa':
+          case 'united states':
+            // code block
+            self.config.countries[i]='United_States_of_America'
+            break;
+          case "uk":
+            self.config.countries[i]="United Kingdom" 
+          default:
+             self.config.countries[i]= self.config.countries[i].replace(" ","_")
+            // code block
+        }
       }
     }
     // initialize flag for data recovery
@@ -147,9 +155,9 @@ Module.register("MyCovid19", {
       self.displayedOnce=true;
       self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
-      for (var country_index in self.config.countries) {
+      for (var country_index in self.config[self.config.type]) {
         // get the country text name. used for index into the our_data hash
-        var this_country = self.config.countries[country_index];
+        var this_country = self.config[self.config.type][country_index];
         if(this.config.debug)         
           Log.log("cumulative_cases="+JSON.stringify(self.our_data[this_country][self.config.chart_type]))
         // clear the work variable
@@ -187,11 +195,11 @@ Module.register("MyCovid19", {
         }
         var ds = []
 
-        for(var x in self.config.countries){
-          if(self.our_data[self.config.countries[x]] != undefined){
+        for(var x in self.config[self.config.type]){
+          if(self.our_data[self.config[self.config.type][x]] != undefined){
             ds.push({
                    xAxisID: 'dates',
-                   data: self.our_data[self.config.countries[x]][self.config.chart_type],
+                   data: self.our_data[self.config[self.config.type][x]][self.config.chart_type],
                    fill: false,
                    borderColor: self.config.line_colors[x], // Add custom color border (Line)
                    label: self.config.countrylist[x],
@@ -316,6 +324,7 @@ Module.register("MyCovid19", {
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
         var first_country_data=this.our_data[countries[0]];
+        /*
         if(payload.config.debug)
           Log.log("test flag="+self.test)
         if(self.test-- >0){
@@ -327,7 +336,7 @@ Module.register("MyCovid19", {
              this.our_data[c]['cumulative_cases'].splice(-1,1)
              this.our_data[c]['cumulative_deaths'].splice(-1,1)
           }
-        }
+        }*/
         // get the date from the last entry of cases
         var last_date=first_country_data['cases'].slice(-1)[0].x;        
         // convert to moment, in mm/dd/yyyy layout 
