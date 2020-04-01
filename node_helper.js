@@ -30,7 +30,7 @@ module.exports = NodeHelper.create({
       self.lastUpdated = moment()
     },
 
-    getInitialData: function (url, payload,  callback) {
+    getInitialData: async function (url, payload,  callback) {
       var date = new Date();
       if(payload.config.useYesterdaysData){
         date.setDate(date.getDate()-1);
@@ -47,24 +47,27 @@ module.exports = NodeHelper.create({
           method: 'GET'
         }, (error, response, body) => {
         if (!error){
-          //if(payload.config.debug)
-          //  console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)    
+          if(payload.config.debug)
+            console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)    
             //console.log("url="+texturl)      
           if(response.statusCode === 200) {
             //if(payload.config.debug)
             //  console.log("have data")
             fs.writeFileSync(xf,body)
 
-            cvt().fromFile(xf)  // input xls
-              .then((result) =>{
+           var result= cvt().fromFile(xf)  // input xls
+             .then((result) =>{
                   fs.unlink(xf, (error) => {
                     //if(payload.config.debug)
                     //  console.log("erased file ="+xf)
                   })
                   callback(result, payload, null)                  
               }
-            )
-          }
+            )/*,error(error){
+              console.log("cvt promise error")
+                callback(null, payload,1)     
+             } */           
+          } 
           else if(response.statusCode > 400 ){
             if(payload.config.debug)
               console.log("no file, retry")
@@ -121,7 +124,7 @@ module.exports = NodeHelper.create({
         }
 
         for(var entry of data){
-          if(payload.config.type=='countries'){
+          if(payload.config.countries.length>0){
             let v = entry[fields[3]]            
             if(payload.config.countries.indexOf(v)>=0){
               //console.log(" country geo="+JSON.stringify(entry))
@@ -144,7 +147,7 @@ module.exports = NodeHelper.create({
         } 
 
         var results={}
-        if(payload.config.type=='countries'){
+        if(payload.config.countries.length >0){
           // loop thru all the configured countries 
           for(var c of payload.config.countries){    
             if( country[c]!=undefined){      
