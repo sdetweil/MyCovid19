@@ -36,19 +36,16 @@ Module.register("MyCovid19", {
 
     yAxisLabelColor:'white',    
     yAxisTickLabelColor:'white',    
-    startLabel: ["1/1/2020", "2/1/2020", "3/1/2020"],
+
     attribution_label:{'countries':'European Centre for Disease Prevention and Control','states':'NY Times'}
 
   },
   ourID: null, 
-  ticklabel:null,
-  url: "",
   loaded: false,
   our_data: null,
   wrapper: null,
   suspended: false,
   charts: [null, null],
-  pointColors: [],
   retryDelay: 15,
   timeout_handle:null,
   displayedOnce:false,
@@ -178,11 +175,6 @@ Module.register("MyCovid19", {
           canvas.style.height = self.config.height + "px";    
           canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
-          var attribution=document.createElement("div");
-          attribution.innerText="courtesy "+self.config.attribution_label[self.config.type];
-          attribution.style.fontSize='9px'
-          attribution.style.textAlign='center'
-          c.appendChild(attribution);
         }
         // if the chart has been created
         if (self.charts[country_index] != null) {
@@ -310,6 +302,11 @@ Module.register("MyCovid19", {
             options: chartOptions, 
           }
         );
+        var attribution=document.createElement("div");
+        attribution.innerText="courtesy "+self.config.attribution_label[self.config.type];
+        attribution.style.fontSize='9px'
+        attribution.style.textAlign='center'
+        canvas.parentElement.appendChild(attribution);        
         break;
       }      
     }
