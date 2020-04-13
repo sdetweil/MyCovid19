@@ -165,8 +165,8 @@ Module.register("MyCovid19", {
           var c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
-          if (!self.config.stacked)
-            c.style.display = 'inline-block';
+          //if (!self.config.stacked)
+          //  c.style.display = 'inline-block';
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
