@@ -191,11 +191,13 @@ Module.register("MyCovid19", {
             canvas.style.backgroundColor=self.config.backgroundColor;
             div.appendChild(canvas);
         }
-        var ds = []
-
+        var __$ds = {}
+        if( __$ds[this.ourID] == undefined)
+          __$ds[this.ourID]= {}
+        __$ds[this.ourID][self.config.type] = []
         for(var x in self.config[self.config.type]){
           if(self.our_data[self.config[self.config.type][x]] != undefined){
-            ds.push({
+             __$ds[this.ourID][self.config.type].push({
                    xAxisID: 'dates',
                    data: self.our_data[self.config[self.config.type][x]][self.config.chart_type],
                    fill: false,
@@ -296,7 +298,7 @@ Module.register("MyCovid19", {
             type: 'line',
             showLine: true,
             data: {
-              datasets: ds,
+              datasets:  __$ds[this.ourID][self.config.type],
               labels: self.ticklabel,
             },
             options: chartOptions, 
@@ -321,7 +323,7 @@ Module.register("MyCovid19", {
       if(payload.id == self.ourID){
         if(payload.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
         // get pointer to data from payload
-        this.our_data = payload.data
+        this.our_data = JSON.parse(JSON.stringify(payload.data))
         // get the list of countries  
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
