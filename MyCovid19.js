@@ -16,12 +16,12 @@ Module.register("MyCovid19", {
     maxWidth: 800,
     width: 500,
     height: 500,
-		//display_colors: ['#2196f3','#ff0000'],
     debug:false,
     stacked:false,
+    dataGood: false,
     chart_type:"cumulative_cases",
-    newFileAvailableTimeofDay:{"countries':2,'states":8},
-
+    newFileAvailableTimeofDay:{'countries':2,'states':8},
+    usePreviousFile:true,
     chart_title:'',
     xAxisLabel:"by date",
     yAxisLabel:"Count",
@@ -49,23 +49,27 @@ Module.register("MyCovid19", {
   retryDelay: 15,
   timeout_handle:null,
   displayedOnce:false,
-  useYesterdaysData:false,  
-  waitingforTodaysData:false,
+  //useYesterdaysData:false,  
+  //waitingforTodaysData:false,
   initialLoadDelay: 2000,   
   tickLabel:[],
   test:0,
+  started:false,
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
   },
 
   start: function () {
-    Log.info("Starting module: " + this.name);
+    started:true,
+    Log.info("Starting module for: " + this.name);
     var self = this;
+    self.config.path=this.data.path
+    //Log.log("added path="+this.data.path+" to config data")
     self.ourID = self.identifier+"_"+Math.floor(Math.random() * 1000) + 1;
     //  Set locale.
     moment.locale(config.language);
-    if(this.config.debug) Log.log("config =" + JSON.stringify(this.config));
+    if(this.config.debug1) Log.log("config =" + JSON.stringify(this.config));
     if(this.config.countries.length>0)
       this.config.type='countries'
     else
@@ -89,44 +93,62 @@ Module.register("MyCovid19", {
       }
     }
     // initialize flag for data recovery
-    self.config.useYesterdaysData=false
+    //self.config.useYesterdaysData=false
     self.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
-    self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay[self.config.type], 'hours');
+    //self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay[self.config.type], 'hours');
   
   },
   setTimerForNextRefresh(self, offset, type){
     var next_time=0
-    if(type=='hours')
+    if(type=='hours'){
       next_time=moment().endOf('day').add(offset,type)
-    else
+      self.config.usePreviousFile=true;
+    }
+    else{
       next_time=moment().add(offset,type)
+      self.config.usePreviousFile=false;
+    }
    // if(self.config.debug)
     var millis=next_time.diff(moment())
-    Log.log("timeout diff ="+ millis)
+    if(self.config.debug)
+      Log.log("timeout diff ="+ millis)
     if(self.timeout_handle){
-      Log.log("clearing timer")
+      if(self.config.debug)      
+        Log.log("clearing timer")
       clearTimeout(self.timeout_handle)
     }
-    Log.log("starting timer")
+    if(self.config.debug)
+      Log.log("starting timer")
     self.timeout_handle=setTimeout(()=>{self.refreshData(self)},millis ); // next_time.diff(moment()));
-    Log.log("timer started")
+    if(self.config.debug)
+      Log.log("timer started")
   },
   refreshData: function(self){    
-    Log.log("refreshing")
+    if(self.config.debug)
+      Log.log("refreshing")
     self.sendSocketNotification("REFRESH", {id:self.ourID,config:self.config});
   },
-  suspend: function () {
+
+  suspend: function() {
     this.suspended = true;
     //self.sendSocketNotification("SUSPEND", null);
   },
-  resume: function () {
+  resume:  function(){
     this.suspended = false;
     //self.sendSocketNotification("RESUME", null);
-    this.updateDom(this.config.initialLoadDelay);
+    if(this.config.dataGood)
+      this.updateDom(this.config.initialLoadDelay);
+    else {
+      if(this.config.debug)
+        Log.log("data not good, refreshing")
+      this.refreshData(this)
+    }
   },
 
   getDom: function () {
     var self = this
+    if(this.config.debug)
+      Log.log("entering getDom() id="+this.ourID)
     // if the MM wrapper hasn't been created
     if (self.wrapper == null) {
       self.wrapper = document.createElement("div");
@@ -145,19 +167,21 @@ Module.register("MyCovid19", {
       if (!this.loaded) {
         this.loaded = true;
         if(!this.our_data){
-          self.wrapper.innerText=this.name+" Loading data for chart \""+self.config.chart_type+"\""
+          self.wrapper.innerText=this.name+" Loading data for chart \""+self.config.chart_type+"\""            
+          if(this.config.debug)
+            Log.log("exiting  getDom() no data id="+this.ourID) 
           return self.wrapper;
         } 
       }
       self.wrapper.innerText=null
       self.displayedOnce=true;
-      self.config.useYesterdaysData=false;
+      //self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
       for (var country_index in self.config[self.config.type]) {
         // get the country text name. used for index into the our_data hash
         var this_country = self.config[self.config.type][country_index];
-        if(this.config.debug)         
-          Log.log("cumulative_cases="+JSON.stringify(self.our_data[this_country][self.config.chart_type]))
+        if(this.config.debug1)         
+          Log.log(self.config.chart_type+"="+JSON.stringify(self.our_data[this_country][self.config.chart_type]))
         // clear the work variable
         var canvas = null;
         // try to locate the existing chart
@@ -165,8 +189,8 @@ Module.register("MyCovid19", {
           var c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
-          if (!self.config.stacked)
-            c.style.display = 'inline-block';
+         // if (!self.config.stacked)
+         //   c.style.display = 'inline-block';
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
@@ -191,13 +215,26 @@ Module.register("MyCovid19", {
             canvas.style.backgroundColor=self.config.backgroundColor;
             div.appendChild(canvas);
         }
-        var ds = []
 
+        // make a hash to avoid collisions
+        var __$ds = {}
+        // has by our instance ID, which has a random number included
+        if( __$ds[this.ourID] == undefined)
+          __$ds[this.ourID]= {}
+        // either states or countries
+        __$ds[this.ourID][self.config.type] = []
+
+        // loop thru the configured location (state or country)
+        // each instance (this/self) is ONE report of multiple lines of the same location type and data type, cases or deaths
         for(var x in self.config[self.config.type]){
-          if(self.our_data[self.config[self.config.type][x]] != undefined){
-            ds.push({
+          var location = self.config[self.config.type][x]
+          // make sure there is data for this selection (spelling errors etc)
+          if(self.our_data[location] != undefined){            
+             // create a new dataset description, one for each location 
+             // multiple states or countries
+             __$ds[this.ourID][self.config.type].push({
                    xAxisID: 'dates',
-                   data: self.our_data[self.config[self.config.type][x]][self.config.chart_type],
+                   data: self.our_data[location][self.config.chart_type],     // < -----   data for this dataset
                    fill: false,
                    borderColor: self.config.line_colors[x], // Add custom color border (Line)
                    label: self.config.countrylist[x],
@@ -292,16 +329,21 @@ Module.register("MyCovid19", {
             }
         self.updateOptions(self.config, chartOptions)
                 // create it now
+    
+        if(this.config.debug)
+          Log.log("drawing in  getDom() id="+this.ourID)                
         self.charts[country_index] = new Chart(canvas, {
             type: 'line',
             showLine: true,
             data: {
-              datasets: ds,
+              datasets:  __$ds[this.ourID][self.config.type],
               labels: self.ticklabel,
             },
             options: chartOptions, 
           }
         );
+      if(this.config.debug)
+        Log.log("done drawing  getDom() id="+this.ourID)
         var attribution=document.createElement("div");
         attribution.innerText="courtesy "+self.config.attribution_label[self.config.type];
         attribution.style.fontSize='9px'
@@ -310,6 +352,8 @@ Module.register("MyCovid19", {
         break;
       }      
     }
+    if(this.config.debug)
+      Log.log("exiting  getDom() id="+this.ourID)
     return self.wrapper;
   },
 
@@ -317,11 +361,12 @@ Module.register("MyCovid19", {
 
   socketNotificationReceived: function (notification, payload) {
     var self = this
-    if (notification === 'Data') {
-      if(payload.id == self.ourID){
-        if(payload.config.debug) Log.log("our_data from helper=" + JSON.stringify(payload));
+    if(payload.id == self.ourID){    
+      if (notification === 'Data') {
+        self.config.dataGood=false; 
+        if(payload.config.debug1) Log.log("our_data from helper=" + JSON.stringify(payload));
         // get pointer to data from payload
-        this.our_data = payload.data
+        this.our_data = JSON.parse(JSON.stringify(payload.data))   // new line 
         // get the list of countries  
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
@@ -367,38 +412,39 @@ Module.register("MyCovid19", {
             // add the specific date entry to the list of Label to display
             // the month would have been added by the loop above
             this.ticklabel.push(last_date)
+
           // if we are no suspended  
           if(!self.suspended)
             // call to get mm to ask us for new charts
             self.updateDom(payload.config.initialLoadDelay);
         }
         if(payload.config.debug)
-          Log.log("comparing last="+lastMoment.format('MM/DD/YYYY')+" with current="+currentMoment_date)
+          Log.log("\tcomparing last="+lastMoment.format('MM/DD/YYYY')+" with current="+currentMoment_date+" id="+this.ourID)
         if(lastMoment.format('MM/DD/YYYY') !== currentMoment_date ){
           if(payload.config.debug)
-            Log.log("have data last entry does NOT match today "+currentMoment_date)
-          self.waitingforTodaysData=true 
+            Log.log("have data last entry does NOT match today "+currentMoment_date+" id="+this.ourID)          
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
         }
         else{
           if(payload.config.debug)
-            Log.log("have data last entry  DOES match today "+currentMoment_date)          
-          self.waitingforTodaysData=false;
-          self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay, 'hours');
+            Log.log("have data last entry  DOES match today "+currentMoment_date+" id="+this.ourID)         
+          self.config.dataGood=true;   
+          self.setTimerForNextRefresh(self, payload.config.newFileAvailableTimeofDay[payload.config.type], 'hours');
         }
-      }
-    } else if(notification==='NOT_AVAILABLE'){
-      if(payload.id == self.ourID){
+        if(self.config.debug)        
+          Log.log("done processing for"+" id="+this.ourID)
+      } else if(notification==='NOT_AVAILABLE'){
         if(payload.config.debug)
-          Log.log("received no data available for refresh")
-        self.waitingforTodaysData=false
-        if(self.displayedOnce)
+          Log.log("received no data available for refresh"+" id="+this.ourID)
+        if(self.displayedOnce){
           self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
-        else{
-          self.waitingforTodaysData=true          
+        }
+        else{        
           self.refreshData(self)
         }
-      }
+        if(self.config.debug)        
+          Log.log("done failure processing for"+" id="+this.ourID)          
+      }        
     }
   },
   updateOptions(config, chartOptions){
@@ -411,7 +457,6 @@ Module.register("MyCovid19", {
               //  defaultFontSize:14
               }                
         }    
-// defaults
 
     if(config.defaultColor){
       defaultFontInfo.global['defaultColor']=config.defaultColor
