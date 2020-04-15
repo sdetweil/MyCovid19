@@ -7,7 +7,7 @@ monitor COVID 19 virus stats with line graphs
 ## Dependencies
 
 * An installation of [MagicMirror<sup>2</sup>](https://github.com/MichMich/MagicMirror)
-* Packages: chartjs, loaded vis npm install
+* Packages: chartjs, loaded via npm install
 
 ## Installation
 

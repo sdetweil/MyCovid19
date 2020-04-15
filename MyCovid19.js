@@ -189,8 +189,6 @@ Module.register("MyCovid19", {
           var c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
-         // if (!self.config.stacked)
-         //   c.style.display = 'inline-block';
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
@@ -366,7 +364,7 @@ Module.register("MyCovid19", {
         self.config.dataGood=false; 
         if(payload.config.debug1) Log.log("our_data from helper=" + JSON.stringify(payload));
         // get pointer to data from payload
-        this.our_data = JSON.parse(JSON.stringify(payload.data))   // new line 
+        this.our_data = JSON.parse(JSON.stringify(payload.data))
         // get the list of countries  
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
