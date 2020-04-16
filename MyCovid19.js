@@ -17,7 +17,7 @@ Module.register("MyCovid19", {
     width: 500,
     height: 500,
     debug:false,
-    stacked:false,
+    newCanvas:false,
     dataGood: false,
     chart_type:"cumulative_cases",
     newFileAvailableTimeofDay:{'countries':2,'states':8},
@@ -130,10 +130,14 @@ Module.register("MyCovid19", {
   },
 
   suspend: function() {
+    if(this.config.debug)
+      Log.log("suspending for id="+this.ourID)
     this.suspended = true;
     //self.sendSocketNotification("SUSPEND", null);
   },
   resume:  function(){
+    if(this.config.debug)
+      Log.log("resuming for id="+this.ourID)
     this.suspended = false;
     //self.sendSocketNotification("RESUME", null);
     if(this.config.dataGood)
@@ -185,14 +189,25 @@ Module.register("MyCovid19", {
         // clear the work variable
         var canvas = null;
         // try to locate the existing chart
-        if ((canvas = document.getElementById("myChart"+self.ourID )) == null) {
-          var c = document.createElement("div");
+        var c=null;
+        if ((canvas = document.getElementById("myChart_"+self.ourID )) != null ) {
+            if(self.config.debug)
+              Log.log("removing existing canvas id="+this.ourID)
+            c=canvas.parentElement;
+            c.removeChild(canvas);
+            self.wrapper.removeChild(c)
+        }
+        if ((canvas = document.getElementById("myChart_"+self.ourID )) ==null ) {      
+          if(self.config.debug)
+            Log.log("did not find old canvas")    
+          c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
+          c.id="mycovid-container_"+self.ourID
           self.wrapper.appendChild(c);
 
           canvas = document.createElement("canvas");
-          canvas.id = "myChart" +self.ourID ;
+          canvas.id = "myChart_" +self.ourID ;
           canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
           canvas.style.backgroundColor=self.config.backgroundColor;
