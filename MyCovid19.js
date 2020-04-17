@@ -177,7 +177,7 @@ Module.register("MyCovid19", {
           return self.wrapper;
         } 
       }
-      //self.wrapper.innerText=null
+
       self.displayedOnce=true;
       //self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
@@ -197,7 +197,8 @@ Module.register("MyCovid19", {
             c.removeChild(canvas);
             self.wrapper.removeChild(c)
         }
-        if ((canvas = document.getElementById("myChart_"+self.ourID )) ==null ) {      
+        if ((canvas = document.getElementById("myChart_"+self.ourID )) ==null ) {    
+          self.wrapper.innerText=null  
           if(self.config.debug)
             Log.log("did not find old canvas")    
           c = document.createElement("div");
