@@ -194,6 +194,7 @@ Module.register("MyCovid19", {
             if(self.config.debug)
               Log.log("removing existing canvas id="+this.ourID)
             c=canvas.parentElement;
+            self.charts[country_index].destroy();
             c.removeChild(canvas);
             self.wrapper.removeChild(c)
         }
