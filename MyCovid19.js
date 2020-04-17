@@ -177,7 +177,7 @@ Module.register("MyCovid19", {
           return self.wrapper;
         } 
       }
-      self.wrapper.innerText=null
+      //self.wrapper.innerText=null
       self.displayedOnce=true;
       //self.config.useYesterdaysData=false;
       // loop thru the our_data from the server
