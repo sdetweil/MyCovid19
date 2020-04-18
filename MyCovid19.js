@@ -156,7 +156,7 @@ Module.register("MyCovid19", {
     // if the MM wrapper hasn't been created
     if (self.wrapper == null) {
       self.wrapper = document.createElement("div");
-      self.wrapper.id ="MyCovid_wrapper"
+      self.wrapper.id ="MyCovid_wrapper_"+self.ourID
       // if the charts will be side by side
       //if (!//this.config.stacked){
         // set the width
