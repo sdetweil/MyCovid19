@@ -156,7 +156,7 @@ Module.register("MyCovid19", {
     // if the MM wrapper hasn't been created
     if (self.wrapper == null) {
       self.wrapper = document.createElement("div");
-      self.wrapper.className = "wrapper";
+      self.wrapper.id ="MyCovid_wrapper"
       // if the charts will be side by side
       //if (!//this.config.stacked){
         // set the width
@@ -224,7 +224,7 @@ Module.register("MyCovid19", {
             var div = canvas.parentElement;
             div.removeChild(canvas)
             canvas = document.createElement("canvas");
-            canvas.id = "myChart" +self.ourID ;
+            canvas.id = "myChart_" +self.ourID ;
             canvas.style.width = (self.config.width -10) + "px";
             canvas.style.height = self.config.height + "px";    
             canvas.style.backgroundColor=self.config.backgroundColor;
@@ -386,19 +386,7 @@ Module.register("MyCovid19", {
         var countries=Object.keys(this.our_data);
         //  get the data for the 1st country, all symetrical
         var first_country_data=this.our_data[countries[0]];
-        /*
-        if(payload.config.debug)
-          Log.log("test flag="+self.test)
-        if(self.test-- >0){
-          Log.log("forcing old date");
-          for(var c of countries){
-             // for testing,  remove last entry, to force retry
-             this.our_data[c]['cases'].splice(-1,1)
-             this.our_data[c]['deaths'].splice(-1,1)
-             this.our_data[c]['cumulative_cases'].splice(-1,1)
-             this.our_data[c]['cumulative_deaths'].splice(-1,1)
-          }
-        }*/
+
         // get the date from the last entry of cases
         var last_date=first_country_data['cases'].slice(-1)[0].x;        
         // convert to moment, in mm/dd/yyyy layout 

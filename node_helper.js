@@ -141,7 +141,7 @@ module.exports = NodeHelper.create({
                 }
               } else {
                 if(payload.config.debug)
-                  console.log("===>error= id="+p.id+" "+ JSON.stringify(error));
+                  console.log("===>error= id="+payload.id+" "+ JSON.stringify(error));
                 for(var p of self.waiting[payload.config.type]){
                   if(payload.config.debug)
                     console.log("rejecting error for id="+p.id)                  
