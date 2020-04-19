@@ -162,7 +162,8 @@ Module.register("MyCovid19", {
       // if the charts will be side by side
       //if (!//this.config.stacked){
         // set the width
-        self.wrapper.style.maxWidth = self.config.maxWidth+"px";
+        self.wrapper.style.maxWidth = self.config.width+"px";
+        self.wrapper.style.maxHeight = self.config.height+"px";
         self.wrapper.style.width = self.config.width + "px";
         self.wrapper.style.height = (parseInt(self.config.height) + 20) + "px";        
       //}
@@ -214,6 +215,8 @@ Module.register("MyCovid19", {
           canvas.id = "myChart_" +self.ourID ;
           canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
+          canvas.style.maxWidth = (self.config.width -10) + "px";
+          canvas.style.maxHeight = self.config.height + "px";            
           canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
         }
@@ -369,6 +372,7 @@ Module.register("MyCovid19", {
         canvas.parentElement.appendChild(attribution);          
       }
       else{      
+        Log.log("will execute defered drawing id="+this.ourID)   
         var info = { self:self, ourID:self.ourID ,canvas:canvas, country_index:country_index, data:__$ds}
         setTimeout(()=> {
           info.self.offlineTimer(info)
