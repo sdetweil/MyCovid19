@@ -216,7 +216,9 @@ Module.register("MyCovid19", {
           canvas.style.width = (self.config.width -10) + "px";
           canvas.style.height = self.config.height + "px";    
           canvas.style.maxWidth = (self.config.width -10) + "px";
-          canvas.style.maxHeight = self.config.height + "px";            
+          canvas.style.maxHeight = self.config.height + "px";  
+          canvas.style.resize-'none'
+          canvas.style.overflow='hidden'
           canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
         }
@@ -232,6 +234,8 @@ Module.register("MyCovid19", {
             canvas.id = "myChart_" +self.ourID ;
             canvas.style.width = (self.config.width -10) + "px";
             canvas.style.height = self.config.height + "px";    
+            canvas.style.maxWidth = (self.config.width -10) + "px";
+            canvas.style.maxHeight = self.config.height + "px";             
             canvas.style.resize-'none'
             canvas.style.overflow='hidden'
             canvas.style.backgroundColor=self.config.backgroundColor;
