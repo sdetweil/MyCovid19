@@ -37,15 +37,16 @@ Module.register("MyCovid19", {
     yAxisLabelColor:'white',    
     yAxisTickLabelColor:'white',    
 
-    attribution_label:{'countries':'European Centre for Disease Prevention and Control','states':'NY Times'}
-
+    attribution_label:{'countries':'European Centre for Disease Prevention and Control','states':'NY Times'},
+    newWrapper:false,
+    defer: true,    
   },
   ourID: null, 
   loaded: false,
   our_data: null,
   wrapper: null,
   suspended: false,
-  charts: [null, null],
+  charts: {},
   retryDelay: 15,
   timeout_handle:null,
   displayedOnce:false,
@@ -55,6 +56,7 @@ Module.register("MyCovid19", {
   tickLabel:[],
   test:0,
   started:false,
+
 
   getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
@@ -154,7 +156,7 @@ Module.register("MyCovid19", {
     if(this.config.debug)
       Log.log("entering getDom() id="+this.ourID)
     // if the MM wrapper hasn't been created
-    if (self.wrapper == null) {
+    if (self.wrapper == null || self.config.newWrapper==true) {
       self.wrapper = document.createElement("div");
       self.wrapper.id ="MyCovid_wrapper_"+self.ourID
       // if the charts will be side by side
@@ -194,7 +196,7 @@ Module.register("MyCovid19", {
             if(self.config.debug)
               Log.log("removing existing canvas id="+this.ourID)
             c=canvas.parentElement;
-            self.charts[country_index].destroy();
+            self.charts[self.ourID].destroy();
             c.removeChild(canvas);
             self.wrapper.removeChild(c)
         }
@@ -216,11 +218,11 @@ Module.register("MyCovid19", {
           c.appendChild(canvas);
         }
         // if the chart has been created
-        if (self.charts[country_index] != null) {
+        if (self.charts[self.ourID] != null) {
             // destroy it, update doesn't work reliably
-            self.charts[country_index].destroy();
+            self.charts[self.ourID].destroy();
             // make it unreferenced
-            self.charts[country_index] = null;
+            self.charts[self.ourID] = null;
             var div = canvas.parentElement;
             div.removeChild(canvas)
             canvas = document.createElement("canvas");
@@ -257,7 +259,8 @@ Module.register("MyCovid19", {
             })
           }  
         }
-        var chartOptions= {
+        if(!self.config.defer){
+          var chartOptions= {
 
               title:{
                 display: true, 
@@ -347,7 +350,7 @@ Module.register("MyCovid19", {
     
         if(this.config.debug)
           Log.log("drawing in  getDom() id="+this.ourID)                
-        self.charts[country_index] = new Chart(canvas, {
+        self.charts[self.ourID] = new Chart(canvas, {
             type: 'line',
             showLine: true,
             data: {
@@ -357,19 +360,143 @@ Module.register("MyCovid19", {
             options: chartOptions, 
           }
         );
-      if(this.config.debug)
-        Log.log("done drawing  getDom() id="+this.ourID)
+        if(this.config.debug)
+          Log.log("done drawing  getDom() id="+this.ourID)
         var attribution=document.createElement("div");
         attribution.innerText="courtesy "+self.config.attribution_label[self.config.type];
         attribution.style.fontSize='9px'
         attribution.style.textAlign='center'
-        canvas.parentElement.appendChild(attribution);        
+        canvas.parentElement.appendChild(attribution);          
+      }
+      else{      
+        var info = { self:self, ourID:self.ourID ,canvas:canvas, country_index:country_index, data:__$ds}
+        setTimeout(()=> {
+          info.self.offlineTimer(info)
+          }, 
+        250)
+      }
+
+      
         break;
       }      
     }
     if(this.config.debug)
       Log.log("exiting  getDom() id="+this.ourID)
     return self.wrapper;
+  },
+
+  offlineTimer: (info)=>{
+      if ((canvas = document.getElementById("myChart_"+info.self.ourID )) != null ) {
+       info.self.drawChart(info.self,info)
+      }
+      else
+        info.self.setTimeout(()=> {info.self.offlineTimer(info)}, 250)
+  },
+  drawChart: (self, info) =>{
+
+            var chartOptions= {
+
+              title:{
+                display: true, 
+                text: self.config.chart_title,   
+
+              },              
+              legend: {
+                display: true,
+                position:'bottom',    
+                textAlign: 'right',  
+
+              },
+              tooltips: {
+                enabled: true,
+                displayColors: true,
+                position: 'nearest',
+                intersect: false,
+              },
+              responsive: false,
+              elements: {
+                point: {
+                  radius: 0
+                },
+                line: {
+                  tension: 0, // disables bezier curves
+                }
+              },
+              scales: {
+                xAxes: [{
+                    id: 'dates',
+                    type: 'time',
+                    distribution: 'linear',
+                    scaleLabel: {
+                      display: true,
+                      labelString: self.config.xAxisLabel,
+
+                    }, 
+                    gridLines: {
+                      display: false,
+                      zeroLineColor: '#ffcc33'
+                    },
+                    time: {
+                      unit: 'day',
+                      parser: 'MM/DD/YYYY'
+                    },
+                    ticks: {
+                      display: true,
+                      maxRotation:90,
+                      minRotation:90,
+                      //labels: self.ticklabel,
+                      source: 'labels',
+                      maxTicksLimit: (self.ticklabel.length*2)+3, //10, //self.our_data[this_country].length,
+                      autoSkip: true,   
+                    },
+                  }
+                ],
+                yAxes: [
+                  {
+                    display: true,
+                    scaleLabel: {
+                      display: true,
+                      labelString: self.config.yAxisLabel,
+
+                    },
+                    gridLines: {
+                      display: false,
+                    },
+
+                    ticks: {
+                      beginAtZero: true,
+                      source: 'data',
+                      min: self.config.ranges.min,
+                      suggestedMax: self.config.ranges.max,
+                      stepSize: self.config.ranges.stepSize,
+                    },
+                  },
+                ]
+              },
+            }
+        self.updateOptions(self.config, chartOptions)
+                // create it now
+    
+        if(self.config.debug)
+          Log.log("defered  drawing in  getDom() id="+info.ourID)                
+        self.charts[info.ourID] = new Chart(info.canvas, {
+            type: 'line',
+            showLine: true,
+            data: {
+              datasets:  info.data[info.ourID][self.config.type],
+              labels: self.ticklabel,
+            },
+            options: chartOptions, 
+          }
+        );
+        if(info.self.config.debug)
+          Log.log("done defered drawing  getDom() id="+info.ourID)
+        var attribution=document.createElement("div");
+        attribution.innerText="courtesy "+info.self.config.attribution_label[info.self.config.type];
+        attribution.style.fontSize='9px'
+        attribution.style.textAlign='center'
+        info.canvas.parentElement.appendChild(attribution);           
+
   },
 
   notificationReceived: function (notification, payload) {},
