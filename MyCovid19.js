@@ -232,6 +232,8 @@ Module.register("MyCovid19", {
             canvas.id = "myChart_" +self.ourID ;
             canvas.style.width = (self.config.width -10) + "px";
             canvas.style.height = self.config.height + "px";    
+            canvas.style.resize-'none'
+            canvas.style.overflow='hidden'
             canvas.style.backgroundColor=self.config.backgroundColor;
             div.appendChild(canvas);
         }
