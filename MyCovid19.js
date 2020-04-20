@@ -487,8 +487,11 @@ Module.register("MyCovid19", {
         self.updateOptions(self.config, chartOptions)
                 // create it now
     
-        if(self.config.debug)
-          Log.log("defered  drawing in  getDom() id="+info.ourID)                
+        if(self.config.debug){
+          Log.log("defered  drawing in  getDom() id="+info.ourID)   
+          Log.log("id="+info.ourID+" data="+JSON.stringify(info.data[info.ourID][self.config.type]))
+        }
+
         self.charts[info.ourID] = new Chart(info.canvas, {
             type: 'line',
             showLine: true,
