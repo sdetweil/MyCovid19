@@ -208,6 +208,8 @@ Module.register("MyCovid19", {
           c = document.createElement("div");
           c.style.width = self.config.width + "px";
           c.style.height = self.config.height + "px";
+          c.style.maxWidth = (self.config.width -10) + "px";
+          c.style.maxHeight = self.config.height + "px";            
           c.id="mycovid-container_"+self.ourID
           self.wrapper.appendChild(c);
 
@@ -217,6 +219,8 @@ Module.register("MyCovid19", {
           canvas.style.height = self.config.height + "px";    
           canvas.style.maxWidth = (self.config.width -10) + "px";
           canvas.style.maxHeight = self.config.height + "px";  
+          canvas.width=self.config.width -10;
+          canvas.height=self.config.height;
           canvas.style.resize-'none'
           canvas.style.overflow='hidden'
           canvas.style.backgroundColor=self.config.backgroundColor;
