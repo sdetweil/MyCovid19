@@ -3119,7 +3119,8 @@ module.exports = function(Chart) {
 				"\n height="+me.chart.chart.height+" width="+me.chart.chart.width+
 				"\n first point="+JSON.stringify(me._data[0])+
 				"\n last point="+JSON.stringify(me._data[me._data.length-1])+
-				"\n label="+me.chart.chart.config.data.datasets[points[0]._datasetIndex].label,
+				"\n label="+me.chart.chart.config.data.datasets[points[0]._datasetIndex].label)
+			Log.log(
 				"\n first data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[0])+
 				"\n last data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[me._data.length-1])				
 				)
