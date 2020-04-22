@@ -382,7 +382,8 @@ Module.register("MyCovid19", {
         canvas.parentElement.appendChild(attribution);          
       }
       else{      
-        Log.log("will execute defered drawing id="+this.ourID)   
+        if(this.config.debug)
+          Log.log("will execute defered drawing id="+this.ourID)   
         var info = { self:self, ourID:self.ourID ,canvas:canvas, country_index:country_index, data:__$ds}
         setTimeout(()=> {
           info.self.offlineTimer(info)
