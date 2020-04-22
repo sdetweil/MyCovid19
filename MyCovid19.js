@@ -59,7 +59,7 @@ Module.register("MyCovid19", {
 
 
   getScripts: function () {
-    return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
+    return ["moment.js", "modules/" + this.name + "/Chart.js"]; //"modules/" + this.name + "/node_modules/chart.js/dist/Chart.js"
   },
 
   start: function () {
@@ -165,7 +165,7 @@ Module.register("MyCovid19", {
         self.wrapper.style.maxWidth = self.config.width+"px";
         self.wrapper.style.maxHeight = self.config.height+"px";
         self.wrapper.style.width = self.config.width + "px";
-        self.wrapper.style.height = (parseInt(self.config.height) + 20) + "px";        
+        self.wrapper.style.height = parseInt(self.config.height)  + "px";        
       //}
     }
     // if we are not suspended/hidden due to sleep or whatever
@@ -520,8 +520,8 @@ Module.register("MyCovid19", {
 
   socketNotificationReceived: function (notification, payload) {
     var self = this
-    if(payload.id == self.ourID){    
-      if (notification === 'Data') {
+    if (notification === 'Data') {
+      if(payload.id == self.ourID){          
         self.config.dataGood=false; 
         if(payload.config.debug1) Log.log("our_data from helper=" + JSON.stringify(payload));
         // get pointer to data from payload
@@ -579,20 +579,20 @@ Module.register("MyCovid19", {
           self.setTimerForNextRefresh(self, payload.config.newFileAvailableTimeofDay[payload.config.type], 'hours');
         }
         if(self.config.debug)        
-          Log.log("done processing for"+" id="+this.ourID)
-      } else if(notification==='NOT_AVAILABLE'){
-        if(payload.config.debug)
-          Log.log("received no data available for refresh"+" id="+this.ourID)
-        if(self.displayedOnce){
-          self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
-        }
-        else{        
-          self.refreshData(self)
-        }
-        if(self.config.debug)        
-          Log.log("done failure processing for"+" id="+this.ourID)          
-      }        
-    }
+          Log.log("done processing for"+" id="+this.ourID)      
+      }  
+    } else if(notification==='NOT_AVAILABLE'){
+      if(payload.config.debug)
+        Log.log("received no data available for refresh"+" id="+this.ourID)
+      if(self.displayedOnce){
+        self.setTimerForNextRefresh(self, self.retryDelay, 'minutes');
+      }
+      else{        
+        self.refreshData(self)
+      }
+      if(self.config.debug)        
+        Log.log("done failure processing for"+" id="+this.ourID)          
+    }        
   },
   updateOptions(config, chartOptions){
     var defaults=false;
