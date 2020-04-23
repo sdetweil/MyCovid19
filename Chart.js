@@ -3107,6 +3107,17 @@ module.exports = function(Chart) {
 				points[i].transition(easingDecimal);
 			}
 
+			// Draw the points
+			Log.log("drawing points on chart ="+JSON.stringify(me.chart.chartArea)+" chart dataset="+points[0]._datasetIndex+
+				"\n height="+me.chart.chart.height+" width="+me.chart.chart.width+
+				"\n first point="+JSON.stringify(me._data[0])+
+				"\n last point="+JSON.stringify(me._data[me._data.length-1])+
+				"\n label="+me.chart.chart.config.data.datasets[points[0]._datasetIndex].label+
+			
+				"\n first data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[0])+
+				"\n last data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[me._data.length-1])				
+				)			
+
 			Chart.canvasHelpers.clipArea(me.chart.chart.ctx, me.chart.chartArea);
 			// Transition and Draw the line
 			if (lineEnabled(me.getDataset(), me.chart.options)) {
@@ -3114,16 +3125,6 @@ module.exports = function(Chart) {
 			}
 			Chart.canvasHelpers.unclipArea(me.chart.chart.ctx);
 
-			// Draw the points
-			Log.log("drawing points on chart ="+JSON.stringify(me.chart.chartArea)+" chart dataset="+points[0]._datasetIndex+
-				"\n height="+me.chart.chart.height+" width="+me.chart.chart.width+
-				"\n first point="+JSON.stringify(me._data[0])+
-				"\n last point="+JSON.stringify(me._data[me._data.length-1])+
-				"\n label="+me.chart.chart.config.data.datasets[points[0]._datasetIndex].label)
-			Log.log(
-				"\n first data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[0])+
-				"\n last data="+JSON.stringify(me.chart.chart.config.data.datasets[points[0]._datasetIndex].data[me._data.length-1])				
-				)
 			for (i=0, ilen=points.length; i<ilen; ++i) {
 				points[i].draw(me.chart.chartArea);
 			}
@@ -9946,7 +9947,7 @@ module.exports = function(Chart) {
 			// Stroke Line
 			ctx.beginPath();
 			lastDrawnIndex = -1;
-
+			Log.log("draw start")
 			for (index = 0; index < points.length; ++index) {
 				current = points[index];
 				previous = helpers.previousItem(points, index);
@@ -9955,6 +9956,7 @@ module.exports = function(Chart) {
 				// First point moves to it's starting position no matter what
 				if (index === 0) {
 					if (!currentVM.skip) {
+						Log.log("moveTo x="+currentVM.x+" y="+currentVM.y)
 						ctx.moveTo(currentVM.x, currentVM.y);
 						lastDrawnIndex = index;
 					}
@@ -9967,13 +9969,14 @@ module.exports = function(Chart) {
 							ctx.moveTo(currentVM.x, currentVM.y);
 						} else {
 							// Line to next point
+							Log.log("draw from prev="+previous._view.x+":"+previous._view.y+ " to current"+current._view.x+":"+current._view.y)
 							lineToPoint(previous, current);
 						}
 						lastDrawnIndex = index;
 					}
 				}
 			}
-
+			Log.log("draw done")
 			ctx.stroke();
 			ctx.restore();
 		}
@@ -10039,6 +10042,7 @@ module.exports = function(Chart) {
 				padding: vm.radius + vm.borderWidth
 			};
 		},
+		// line point draw
 		draw: function(chartArea) {
 			var vm = this._view;
 			var model = this._model;
