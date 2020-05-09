@@ -5,11 +5,11 @@
  * present COVID 19 virus info in line chart mode
  */
 
-Module.register("MyCovid19", {
+Module.register("MyCovid19" , {
 
   // Module config defaults.
   defaults: {
-    type:'countries',
+    type:null,
     states:[],
     countries: [],
     line_colors:['red','blue','green','yellow','white'],
@@ -72,32 +72,35 @@ Module.register("MyCovid19", {
     //  Set locale.
     moment.locale(config.language);
     if(this.config.debug1) Log.log("config =" + JSON.stringify(this.config));
-    if(this.config.countries.length>0)
+    if(Array.isArray(this.config.countries) && this.config.countries.length>0)
       this.config.type='countries'
-    else
+    else if(Array.isArray(this.config.states) && this.config.states.length>0)
       this.config.type='states'
-    this.config.countrylist=this.config[self.config.type].slice()    
-    if(self.config.type=='countries'){
-      for(var i in this.config.countries){
-        switch(this.config.countries[i].toLowerCase()) {
-          case 'us':
-          case 'usa':
-          case 'united states':
-            // code block
-            self.config.countries[i]='United_States_of_America'
-            break;
-          case "uk":
-            self.config.countries[i]="United Kingdom" 
-          default:
-             self.config.countries[i]= self.config.countries[i].replace(" ","_")
-            // code block
+    else
+      Log.error(this.name+" missing array for countries or states")
+    if(self.config.type){
+      this.config.countrylist=this.config[self.config.type].slice()    
+      if(self.config.type=='countries'){
+        for(var i in this.config.countries){
+          switch(this.config.countries[i].toLowerCase()) {
+            case 'us':
+            case 'usa':
+            case 'united states':
+              // code block
+              self.config.countries[i]='United_States_of_America'
+              break;
+            case "uk":
+              self.config.countries[i]="United Kingdom" 
+            default:
+               self.config.countries[i]= self.config.countries[i].replace(" ","_")
+              // code block
+          }
         }
       }
+      // tell helper about config
+      self.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
     }
-    // initialize flag for data recovery
-    //self.config.useYesterdaysData=false
-    self.sendSocketNotification("CONFIG", {id:self.ourID,config:self.config});
-    //self.setTimerForNextRefresh(self, self.config.newFileAvailableTimeofDay[self.config.type], 'hours');
+
   
   },
   setTimerForNextRefresh(self, offset, type){
@@ -267,130 +270,24 @@ Module.register("MyCovid19", {
                    data: self.our_data[location][self.config.chart_type],     // < -----   data for this dataset
                    fill: false,
                    borderColor: self.config.line_colors[x], // Add custom color border (Line)
+                   backgroundColor: self.config.line_colors[x],
                    label: self.config.countrylist[x],
                    showInLegend: true,                    
             })
           }  
         }
-        if(!self.config.defer){
-          var chartOptions= {
-
-              title:{
-                display: true, 
-                text: self.config.chart_title,   
-
-              },              
-              legend: {
-                display: true,
-                position:'bottom',    
-                textAlign: 'right',  
-
-              },
-              tooltips: {
-                enabled: true,
-                displayColors: true,
-                position: 'nearest',
-                intersect: false,
-              },
-              responsive: false,
-              elements: {
-                point: {
-                  radius: 0
-                },
-                line: {
-                  tension: 0, // disables bezier curves
-                }
-              },
-              scales: {
-                xAxes: [{
-                    id: 'dates',
-                    type: 'time',
-                    distribution: 'linear',
-                    scaleLabel: {
-                      display: true,
-                      labelString: self.config.xAxisLabel,
-
-                    }, 
-                    gridLines: {
-                      display: false,
-                      zeroLineColor: '#ffcc33'
-                    },
-                    time: {
-                      unit: 'day',
-                      parser: 'MM/DD/YYYY'
-                    },
-                    ticks: {
-                      display: true,
-                      maxRotation:90,
-                      minRotation:90,
-                      //labels: self.ticklabel,
-                      source: 'labels',
-                      maxTicksLimit: (self.ticklabel.length*2)+3, //10, //self.our_data[this_country].length,
-                      autoSkip: true,   
-                    },
-                  }
-                ],
-                yAxes: [
-                  {
-                    display: true,
-                    scaleLabel: {
-                      display: true,
-                      labelString: self.config.yAxisLabel,
-
-                    },
-                    gridLines: {
-                      display: false,
-                     // color: "#FFFFFF",
-                     // zeroLineColor: '#ffcc33',
-                     // fontColor: 'white',
-                     // scaleFontColor: 'white',
-                    },
-
-                    ticks: {
-                      beginAtZero: true,
-                      source: 'data',
-                      min: self.config.ranges.min,
-                      suggestedMax: self.config.ranges.max,
-                      stepSize: self.config.ranges.stepSize,
-
-                    },
-                  },
-                ]
-              },
-            }
-        self.updateOptions(self.config, chartOptions)
-                // create it now
-    
-        if(this.config.debug)
-          Log.log("drawing in  getDom() id="+this.ourID)                
-        self.charts[self.ourID] = new Chart(canvas, {
-            type: 'line',
-            showLine: true,
-            data: {
-              datasets:  __$ds[this.ourID][self.config.type],
-              labels: self.ticklabel,
-            },
-            options: chartOptions, 
-          }
-        );
-        if(this.config.debug)
-          Log.log("done drawing  getDom() id="+this.ourID)
-        var attribution=document.createElement("div");
-        attribution.innerText="courtesy "+self.config.attribution_label[self.config.type];
-        attribution.style.fontSize='9px'
-        attribution.style.textAlign='center'
-        canvas.parentElement.appendChild(attribution);          
-      }
-      else{      
-        if(this.config.debug)
-          Log.log("will execute defered drawing id="+this.ourID)   
         var info = { self:self, ourID:self.ourID ,canvas:canvas, country_index:country_index, data:__$ds}
-        setTimeout(()=> {
-          info.self.offlineTimer(info)
-          }, 
-        250)
-      }
-
+        if(!self.config.defer){
+           info.self.drawChart(info.self,info)
+		}
+		else{      
+			if(this.config.debug)
+			  Log.log("will execute defered drawing id="+this.ourID)   			
+			setTimeout(()=> {
+			  info.self.offlineTimer(info)
+			  }, 
+				250)
+		}
       
         break;
       }      
@@ -407,6 +304,7 @@ Module.register("MyCovid19", {
       else
         info.self.setTimeout(()=> {info.self.offlineTimer(info)}, 250)
   },
+
   drawChart: (self, info) =>{
 
             var chartOptions= {
@@ -415,12 +313,12 @@ Module.register("MyCovid19", {
                 display: true, 
                 text: self.config.chart_title,   
 
-              },              
+              },        
               legend: {
-                display: true,
+              //  display: true,
                 position:'bottom',    
                 textAlign: 'right',  
-
+                labels:{ boxWidth:10}
               },
               tooltips: {
                 enabled: true,
@@ -496,7 +394,7 @@ Module.register("MyCovid19", {
           Log.log("defered  drawing in  getDom() id="+info.ourID)   
           Log.log("id="+info.ourID+" data="+JSON.stringify(info.data[info.ourID][self.config.type]))
         }
-
+    
         self.charts[info.ourID] = new Chart(info.canvas, {
             type: 'line',
             showLine: true,
@@ -598,12 +496,10 @@ Module.register("MyCovid19", {
   updateOptions(config, chartOptions){
     var defaults=false;
         var defaultFontInfo = {      
-              global:{
               //  defaultColor : 'yourColor',
               //  defaultFontColor : 'yourColor',
               //  defaultFontFamily : 'yourFont',
-              //  defaultFontSize:14
-              }                
+              //  defaultFontSize:14      
         }    
 
     if(config.defaultColor){
@@ -623,7 +519,7 @@ Module.register("MyCovid19", {
       defaults=true
     }   
     if(defaults)    {
-      chartOptions['defaults']= defaultFontInfo
+     // chartOptions['defaults']= defaultFontInfo
     }
 // chart title
 
@@ -646,7 +542,7 @@ Module.register("MyCovid19", {
       chartOptions.legend.fontStyle=config.legendFontStyle
     if(config.legendTextColor){
       var labels = { fontColor: config.legendTextColor}
-      chartOptions.legend['labels']= labels
+      chartOptions.legend['labels']= Object.assign(chartOptions.legend['labels'],labels)
     }
 
 // xAxes label
