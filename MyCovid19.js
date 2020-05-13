@@ -38,6 +38,7 @@ Module.register("MyCovid19" , {
     yAxisTickLabelColor:'white',    
 
     attribution_label:{'countries':'European Centre for Disease Prevention and Control','states':'NY Times'},
+    attribution_label_height:10,
     newWrapper:false,
     defer: true,    
   },
@@ -219,9 +220,9 @@ Module.register("MyCovid19" , {
           canvas = document.createElement("canvas");
           canvas.id = "myChart_" +self.ourID ;
           canvas.style.width = (self.config.width -10) + "px";
-          canvas.style.height = self.config.height + "px";    
+          canvas.style.height = (self.config.height -self.config.attribution_label_height)+ "px";    
           canvas.style.maxWidth = (self.config.width -10) + "px";
-          canvas.style.maxHeight = self.config.height + "px";  
+          canvas.style.maxHeight = (self.config.height - self.config.attribution_label_height) + "px";  
           canvas.width=self.config.width -10;
           canvas.height=self.config.height;
           canvas.style.resize='none'
@@ -240,9 +241,9 @@ Module.register("MyCovid19" , {
             canvas = document.createElement("canvas");
             canvas.id = "myChart_" +self.ourID ;
             canvas.style.width = (self.config.width -10) + "px";
-            canvas.style.height = self.config.height + "px";    
+            canvas.style.height = (self.config.height -self.config.attribution_label_height)+ "px";    
             canvas.style.maxWidth = (self.config.width -10) + "px";
-            canvas.style.maxHeight = self.config.height + "px";             
+            canvas.style.maxHeight = (self.config.height -self.config.attribution_label_height) + "px";             
             canvas.style.resize-'none'
             canvas.style.overflow='hidden'
             canvas.style.backgroundColor=self.config.backgroundColor;
@@ -308,6 +309,14 @@ Module.register("MyCovid19" , {
   drawChart: (self, info) =>{
 
             var chartOptions= {
+				layout: {
+				    padding: {
+				        left: 30,
+				        right: 0,
+				        top: 0,
+				        bottom: 0
+				    }
+				},
 
               title:{
                 display: true, 
@@ -357,7 +366,6 @@ Module.register("MyCovid19" , {
                       display: true,
                       maxRotation:90,
                       minRotation:90,
-                      //labels: self.ticklabel,
                       source: 'auto',
                       maxTicksLimit: (self.ticklabel.length*2)+3, //10, //self.our_data[this_country].length,
                       autoSkip: true,   
@@ -410,7 +418,9 @@ Module.register("MyCovid19" , {
         var attribution=document.createElement("div");
         attribution.innerText="courtesy "+info.self.config.attribution_label[info.self.config.type];
         attribution.style.fontSize='9px'
+        attribution.style.height=(self.config.attribution_label_height+2)+'px';
         attribution.style.textAlign='center'
+        attribution.style.verticalAlign ='text-top';
         info.canvas.parentElement.appendChild(attribution);           
 
   },
