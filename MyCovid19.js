@@ -58,9 +58,9 @@ Module.register("MyCovid19" , {
   started:false,
 
 
-  getScripts: function () {
+/*  getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
-  },
+  }, */
 
   start: function () {
     started:true,
@@ -224,7 +224,7 @@ Module.register("MyCovid19" , {
           canvas.style.maxHeight = self.config.height + "px";  
           canvas.width=self.config.width -10;
           canvas.height=self.config.height;
-          canvas.style.resize-'none'
+          canvas.style.resize='none'
           canvas.style.overflow='hidden'
           canvas.style.backgroundColor=self.config.backgroundColor;
           c.appendChild(canvas);
@@ -358,7 +358,7 @@ Module.register("MyCovid19" , {
                       maxRotation:90,
                       minRotation:90,
                       //labels: self.ticklabel,
-                      source: 'labels',
+                      source: 'auto',
                       maxTicksLimit: (self.ticklabel.length*2)+3, //10, //self.our_data[this_country].length,
                       autoSkip: true,   
                     },

@@ -264,7 +264,7 @@ module.exports = NodeHelper.create({
           }
         }
         else{
-          // loop thru all the configured countries 
+          // loop thru all the configured states
           for(var c of payload.config.states){    
             if( state[c]!=undefined){      
               var totalc=0; var totald=0;
