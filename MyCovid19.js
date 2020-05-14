@@ -59,9 +59,9 @@ Module.register("MyCovid19" , {
   started:false,
 
 
-/*  getScripts: function () {
+  getScripts: function () {
     return ["moment.js", "modules/" + this.name + "/node_modules/chart.js/dist/Chart.min.js"];
-  }, */
+  }, 
 
   start: function () {
     started:true,
