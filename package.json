@@ -15,10 +15,11 @@
     "url": "https://github.com/sdetweil/MyCovid19/issues"
   },
   "dependencies": {
-    "chart.js": "2.9.3",
+    "chart.js": "^2.5.0",
     "csvtojson": "^2.0.10",
-    "fs": "latest",
-    "moment": "^2.23.0",
-    "path": "^0.12.7"
+    "fs": "0.0.1-security",
+    "moment": "^2.25.3",
+    "path": "^0.12.7",
+    "prettier": "^2.0.5"
   }
 }
