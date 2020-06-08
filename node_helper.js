@@ -2,333 +2,605 @@
  * Module: MyCovid19
  *
  * Node_helper written by sdetweil@gmail.com
- *  
+ *
  */
-const NodeHelper = require('node_helper');
-const request = require('request');
-const path = require('path')
-var moment = require('moment');
-//const cvt=require("xlsx-to-json")
-const cvt=require('csvtojson')
-var fs=require('fs')
-
+const NodeHelper = require("node_helper");
+const request = require("request");
+const path = require("path");
+var moment = require("moment");
+const cvt = require("csvtojson");
+var fs = require("fs");
 
 module.exports = NodeHelper.create({
-    countryfields:['date','cases','deaths','countries','geoid'],
-    statefields:['date','state','cases','deaths'],
-    suspended: false,
-    retryCount: 3,
-    statesurl: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
-    countriesurl:"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
-    waiting:{'countries':[], 'states':[]},
+	/*	countryfields: {
+		date_fieldname: "dateRep",
+		cases_fieldname: "cases",
+		deaths_fieldname: "deaths",
+		location_fieldname: "countriesAndTerritories",
+		geo_fieldname: "geoid",
+	},
+	statefields: {
+		date_fieldname: "date",
+		location_fieldname: "state",
+		cases_fieldname: "cases",
+		deaths_fieldname: "deaths",
+	},
+	countyfields:{
+		date_fieldname: "date",
+		location_fieldname: "state",
+		cases_fieldname: "cases",
+		deaths_fieldname: "deaths",
+	}, */
+	datafields: {
+		countries: {
+			date_fieldname: "dateRep",
+			cases_fieldname: "cases",
+			deaths_fieldname: "deaths",
+			location_fieldname: "countriesAndTerritories",
+			geo_fieldname: "geoid",
+		},
+		states: {
+			date_fieldname: "date",
+			location_fieldname: "state",
+			cases_fieldname: "cases",
+			deaths_fieldname: "deaths",
+		},
+		counties: {
+			date_fieldname: "date",
+			location_fieldname: "county",
+			statename_fieldname: "state",
+			cases_fieldname: "cases",
+			deaths_fieldname: "deaths",
+		},
+	},
+	suspended: false,
+	retryCount: 3,
+	sourceurls: {
+		states:
+			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
+		countries:
+			"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
+		counties:
+			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
+	},
+	/*statesurl:
+		"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
+	countriesurl:
+		"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
+	countiesurl:
+		"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", */
+	waiting: { countries: [], states: [], counties: [] },
+	date_mask: {
+		countries: "DD/MM/YYYY",
+		states: "YYYY-MM-DD",
+		counties: "YYYY-MM-DD",
+	},
+	charter_date_format: "MM/DD/YYYY",
+	config_date_format: "MM/DD/YYYY",
 
-    start: function () {
-      console.log("Starting node_helper for module: " + this.name);
-      self = this;
-    },
+	start: function () {
+		console.log("Starting node_helper for module: " + this.name);
+		self = this;
+	},
 
-    getInitialData: function ( payload) {
-      var self=this;
-      var promise = new Promise( (resolve,reject) =>{
-
-        var xf=payload.config.path+payload.config.type+"-rawdata"+"-"+moment().format("MM-DD-YYYY")
-        if(payload.config.usePreviousFile && fs.existsSync(xf)){
-          if(payload.config.debug)
-            console.log("requested file exists="+xf+" sending back to "+payload.id)
-          // send it back
-          cvt().fromFile(xf)  // input xls
-           .then((result) =>{
-              resolve( {data:result,payload:payload})
-              //callback(result, payload, null)                  
-            }
-          )
-        }
-        else{
-          if(payload.config.debug)
-            console.log("requested file does NOT exist "+payload.id)        
-          // if we are not waiting
-          var found=false;
-          for(var p of this.waiting[payload.config.type]){
-            if(p.id == payload.id){
-              found=true
-              break;
-            }
-          }
-          if(found==false){
-            if(payload.config.debug)
-              console.log("not on the list to be waiting, adding "+payload.id)
-            // say we are
-            payload.resolve=resolve
-            payload.reject=reject
-            this.waiting[payload.config.type].push(payload)
-          }
-          else  {
-            // already waiting?
-            if(payload.config.debug)
-              console.log("already waiting "+payload.id)
-          }
-
-          // if we are the first
-          if(this.waiting[payload.config.type].length==1){
-            if(payload.config.debug)
-               console.log("first to be waiting "+payload.id)
-            // send request to get file
-            request(
-              {
-                url: payload.config.type=='countries'?this.countriesurl:this.statesurl,
-                encoding: null,
-                //headers: {
-                //  'Accept-Encoding': 'gzip'
-                //},
-                //gzip: true,
-                method: 'GET'
-              }, (error, response, body) => {
-              if (!error){
-                if(payload.config.debug)
-                  console.log("processing response error="+error+" response.code="+response.statusCode+" file="+xf)    
-                  //console.log("url="+texturl)      
-                if(response.statusCode === 200) {
-                  //if(payload.config.debug)
-                  //  console.log("have data")
-                  fs.writeFile(xf,body, (error)=>{
-                    if(!error){
-                      cvt().fromFile(xf)  // input xls
-                       .then((result) =>{
-                          // send the response to all waiters
-                          for(var p of self.waiting[payload.config.type]){
-                            if(payload.config.debug)
-                              console.log("resolving for id="+p.id)
-                            p.resolve({data:result, payload:p})                  
-                          }
-                          // clear the waiting list
-                          self.waiting[payload.config.type]=[]
-                          // get yesterdays filename
-                          var xf1=payload.config.path+payload.config.type+"-rawdata"+"-"+moment().subtract(1,'days').format("MM-DD-YYYY")
-                          // if it exists
-                          if(fs.existsSync(xf1)){                        
-                            // erase it
-                            fs.unlink(xf1, (error) => {
-                              if(payload.config.debug)
-                                console.log("erased old file ="+xf1)
-                            })
-                          }  
-                        }
-                      )
-                    }
-                    else {
-                      if(payload.config.debug)
-                        console.log("file write error id="+p.id)
-                      for(var p of self.waiting[payload.config.type]){
-                          if(payload.config.debug)
-                           console.log("rejecting file write for id="+p.id) 
-                        p.reject({result:null, payload:p, error:error})    
-                      }
-                      // clear the waiting list
-                      self.waiting[payload.config.type]=[]                   
-                    }
-                  })         
-                } 
-                else if(response.statusCode > 400 ){
-                  if(payload.config.debug)
-                    console.log("no file, retry id="+p.id)
-                  for(var p of self.waiting[payload.config.type]){
-                    if(payload.config.debug)
-                      console.log("rejecting no file for id="+p.id)                    
-                    p.reject({data:null, payload:p, error:response.statusCode})    
-                  }
-                  // clear the waiting list
-                  self.waiting[payload.config.type]=[]                                        
-                }
-              } else {
-                if(payload.config.debug)
-                  console.log("===>error= id="+payload.id+" "+ JSON.stringify(error));
-                for(var p of self.waiting[payload.config.type]){
-                  if(payload.config.debug)
-                    console.log("rejecting error for id="+p.id)                  
-                  p.reject({data:null, payload:p, error:error})     
-                }
-                // clear the waiting list
-                self.waiting[payload.config.type]=[]                                   
-              }
-            }
-            );  // end request
-          } else {
-            if(payload.config.debug)
-              console.log("not first waiting "+payload.id)
-          }
-        }
-      } 
-      )
-    return promise
-    },
-
-    unique: function(list, name, payload) {
-      var self=this
-      var result = null;
-      if(payload.config.debug1)
-        console.log("looking for "+name+" in "+JSON.stringify(list))
-      list.forEach(function(e) {
-        if(e.toLowerCase().indexOf(name.toLowerCase())>=0){               
-          result=e;
-        }
-      });
-      
-      return result;
-    },
-    doGetcountries: function (init, payload, data) {
-      var self = this
-    
-      if (init==true) {
-
-        // format data keyed by country name
-        var   country= {}
-        var   state = {}
-        var   fields= []
-        var fieldNames=Object.keys(data[0]);
-
-        if(payload.config.type=='countries'){      
-
-          for(var f of this.countryfields){            
-            fields.push(this.unique(fieldNames,f, payload))
-          }        
-        }
-        else{
-          for(var  f of this.statefields){
-            fields.push(this.unique(fieldNames,f, payload))
-          }            
-        }
-
-        for(var entry of data){
-          if(payload.config.countries.length>0){
-            let v = entry[fields[3]]            
-            if(payload.config.countries.indexOf(v)>=0){
-              //console.log(" country geo="+JSON.stringify(entry))
-              if(country[v]==undefined){
-                country[v]=[]   
-              }        
-              country[v].push(entry)          
-            }
-          }
-          else{
-            let v = entry[fields[1]]
-            if(payload.config.states.indexOf(v)>=0){
-              //console.log(" country geo="+JSON.stringify(entry))
-              if(state[v]==undefined){
-                state[v]=[]   
-              }        
-              state[v].push(entry) 
-            }          
-          }
-        } 
-
-        var results={}
-        if(payload.config.countries.length >0){
-          // loop thru all the configured countries 
-          for(var c of payload.config.countries){    
-            if( country[c]!=undefined){      
-              var totalc=0; var totald=0;
-              var cases=[]; var deaths=[];
-              var tcases=[]; var tdeaths=[];
-
-              for(var u of country[c]){
-                if(payload.config.debug1)
-                 console.log("date="+u[fields[0]]+" cases="+u[fields[1]]+" deaths="+u[fields[2]]+" geoid="+u[fields[4]])
-                // filter out before startDate
-                if(payload.config.startDate==undefined || !moment(u[fields[0]],'DD/MM/YYYY').isBefore(moment(payload.config.startDate,'MM/DD/YYYY'))){ 
-                  if(u[fields[0]].endsWith("20")){
-                    cases.push({ x: moment(u[fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[fields[1]])})
-                    deaths.push({ x: moment(u[fields[0]],"DD/MM/YYYY").format('MM/DD/YYYY'), y:parseInt(u[fields[2]])})
-                  }
-                }
-              }
-              // data presented in reverse dsate order, flip them
-              cases=cases.reverse()
-              deaths=deaths.reverse()
-              // initialize cumulative counters to 0
-              // make a copy
-              tcases=JSON.parse(JSON.stringify(cases))
-              tdeaths=JSON.parse(JSON.stringify(deaths))
-              // loop thru data and create cumulative counters
-              for(var i=1 ; i< cases.length; i++){
-                tcases[i].y+=tcases[i-1].y;
-                tdeaths[i].y+=tdeaths[i-1].y
-              }
-
-              var d={'cases':cases, 'deaths':deaths,'cumulative_cases':tcases,'cumulative_deaths':tdeaths}
-              //if(payload.config.debug)
-              //  console.log("data returned ="+JSON.stringify(d))
-              // add this country to the results
-              results[c]=d
-
-            }
-          }
-        }
-        else{
-          // loop thru all the configured states
-          for(var c of payload.config.states){    
-            if( state[c]!=undefined){      
-              var totalc=0; var totald=0;
-              var cases=[]; var deaths=[];
-              var tcases=[]; var tdeaths=[];
-              if(payload.config.debug1)
-                console.log("there are "+state[c].length+" entries for state="+c);
-              for(var u of state[c]){
-                if(payload.config.debug1)
-                 console.log("date="+u[fields[0]]+" cases="+u[fields[3]]+" deaths="+u[fields[4]])
-                // filter out before startDate
-                if(payload.config.startDate==undefined || !moment(u[fields[0]],'YYYY-MM-DD').isBefore(moment(payload.config.startDate,'MM/DD/YYYY'))){ 
-                  if(u[fields[0]].startsWith("20")){
-                    tcases.push({ x: moment(u[fields[0]],"YYYY-MM-DD").format('MM/DD/YYYY'), y:parseInt(u[fields[2]])})
-                    tdeaths.push({ x: moment(u[fields[0]],"YYYY-MM-DD").format('MM/DD/YYYY'), y:parseInt(u[fields[3]])})
-                  }
-                }
-              }
-              // initialize cumulative counters to 0
-              // make a copy
-              cases=JSON.parse(JSON.stringify(tcases))
-              deaths=JSON.parse(JSON.stringify(tdeaths))
-              // loop thru data and create cumulative counters
-              for(var i=cases.length-1;i>0 ;i--){
-                cases[i].y-=tcases[i-1].y;
-                deaths[i].y-=tdeaths[i-1].y
-              }
-
-              var d={'cases':cases, 'deaths':deaths,'cumulative_cases':tcases,'cumulative_deaths':tdeaths}
-              //if(payload.config.debug)
-              //  console.log("data returned ="+JSON.stringify(d))
-              // add this country to the results
-              results[c]=d
-            }
-          }      
-        }
-        // send the data on to the display module
-       self.sendSocketNotification('Data', {id:payload.id, config:payload.config, data:results})
-    }
-  },
-    getData: function (init, payload) {
-      
-      if ( init==true) {
-   	    self.getInitialData( payload) .then( (output) =>{
-                   //if(payload.config.debug) console.log("data data="+JSON.stringify(data))
-           self.doGetcountries(init, output.payload, output.data);
-          },(error)=>{            
-            console.log("sending no data available notification")
-            self.sendSocketNotification('NOT_AVAILABLE', {id:error.payload.id, config:error.payload.config, data:null})
-          }
-      	);
+	waitForFile: function (payload) {
+		return new Promise((resolve, reject) => {
+			// send it back\
+			if (
+				payload.config.usePreviousFile == true &&
+				fs.existsSync(payload.filename)
+			)
+				// no need to wait
+				resolve(payload);
+			else {
+				// wait, save our promise notifiy functions
+				payload.resolve.unshift(resolve);
+				payload.reject.unshift(reject);
 			}
-    },
-    // socketNotificationReceived received.
-    socketNotificationReceived: function (notification, payload) {
-      if (notification === 'CONFIG') {
-        self.getData(true, payload);
-      }
-      else if (notification === 'REFRESH') {
-         self.getData(true, payload);
-      } else if (notification === 'SUSPEND') {
-        self.suspended = true;
-      } else if (notification === 'RESUME') {
-        self.suspended = false;
-      }
-    },
-  });
+		});
+	},
+
+	fieldtest: {
+		states: (x, payload) => {
+			return (
+				payload.config[payload.config.type].indexOf(
+					x[payload.fields.location_fieldname]
+				) >= 0
+			);
+		},
+		countries: (x, payload) => {
+			return (
+				payload.config[payload.config.type].indexOf(
+					x[payload.fields.location_fieldname]
+				) >= 0
+			);
+		},
+		counties: (x, payload) => {
+			// get the county name from the data
+			let county = x[payload.fields.location_fieldname];
+			let state = x[payload.fields.statename_fieldname];
+			// console.log("looking for county="+county+" and state="+state)
+			// loop thru the config to see if its one we care about
+			let r = payload.config[payload.config.type].filter((location) => {
+				// if this data record  is for the selected county, check its matching state
+				return (
+					location.hasOwnProperty(county) && location[county] == state
+				);
+			});
+			//console.log(" found it"+JSON.stringify(r))
+			return r.length > 0;
+		},
+	},
+
+	processFileData: function (payload) {
+		let self = this;
+		if (payload.config.debug)
+			console.log(
+				"processing id=" +
+					payload.id +
+					" file=" +
+					payload.filename +
+					" fields=" +
+					payload.fields
+			);
+		// get the start date filter if specified
+		let start = payload.config.startDate
+			? moment(payload.config.startDate, self.config_date_format)
+			: moment("01/01/2020");
+		cvt()
+			.fromFile(payload.filename) // input xls
+			.subscribe((jsonObj, index) => {
+				try {
+					// if this field is for one of the locations requested
+					if (
+						/*(
+						payload.config[payload.config.type].indexOf(
+							jsonObj[payload.fields.location_fieldname]
+						) >= 0 ) */
+						self.fieldtest[payload.config.type](jsonObj, payload)
+					) {
+						// if this location is within the date range
+						if (
+							moment(
+								jsonObj[payload.fields.date_fieldname],
+								self.date_mask[payload.config.type]
+							).isSameOrAfter(start)
+						) {
+							//console.log("saving data for location ="+ jsonObj[payload.fields.location_fieldname])
+							payload.location[
+								jsonObj[payload.fields.location_fieldname]
+							].push(jsonObj);
+						}
+					}
+				} catch (error) {
+					console.log(" location undefined =" + error);
+				}
+			})
+			.then((result) => {
+				// all done, tell the topmost function we completed
+				if (payload.config.debug)
+					console.log("done processing file id=" + payload.id);
+				payload.resolve.shift()({
+					data: payload.location,
+					payload: payload,
+				});
+			});
+	},
+
+	getInitialData: function (payload) {
+		var self = this;
+		var promise = new Promise((resolve, reject) => {
+			var xf =
+				payload.config.path +
+				payload.config.type +
+				"-rawdata" +
+				"-" +
+				moment().format("MM-DD-YYYY") +
+				".csv";
+			let location = {};
+			let fields = self.datafields[payload.config.type];
+			/*	payload.config.type == "countries"
+					? self.countryfields
+					: self.statefields; */
+			if (payload.config.type != "counties")
+				for (let n of payload.config[payload.config.type])
+					location[n] = [];
+			else
+				for (let n of payload.config[payload.config.type])
+					location[Object.keys(n)[0]] = [];
+
+			if (payload.config.debug) {
+				console.log(
+					"requested file exists=" +
+						xf +
+						" sending back to " +
+						payload.id
+				);
+			}
+			payload.location = location;
+			payload.filename = xf;
+			payload.fields = fields;
+			// initialize the promise pointer arrays
+			payload.resolve = [];
+			payload.reject = [];
+			// save our resolve/reject
+			payload.resolve.push(resolve);
+			payload.reject.push(reject);
+
+			if (payload.config.debug)
+				console.log("ready to get data id=" + payload.id);
+
+			self.waitForFile(payload).then((payload) => {
+				if (payload.config.debug)
+					console.log("check for file =" + payload.filename);
+				if (fs.existsSync(payload.filename)) {
+					self.processFileData(payload);
+				} else {
+					reject("file not found=" + payload.filename);
+				}
+				return;
+			});
+
+			self.waiting[payload.config.type].push(payload);
+			// if we should NOT reuse the previous file
+			// or
+			// the file doesn't exist
+			if (
+				payload.usePreviousFile == false ||
+				!fs.existsSync(payload.filename)
+			) {
+				// if we are the first
+				if (self.waiting[payload.config.type].length == 1) {
+					if (payload.config.debug)
+						console.log(
+							"first to be waiting " +
+								payload.id +
+								" url= " +
+								self.sourceurls[
+									payload.config.type
+								] /*==
+								"countries"
+								? self.countriesurl
+								: self.statesurl*/
+						);
+					self.getFile(payload);
+				} else {
+					if (payload.config.debug)
+						console.log("not first waiting " + payload.id);
+				}
+			}
+		});
+		return promise;
+	},
+
+	getFile: function (payload) {
+		var self = this;
+		// send request to get file
+		request(
+			{
+				url: self.sourceurls[payload.config.type],
+				/*payload.config.type == "countries"
+							? self.countriesurl
+							: self.statesurl, */
+				encoding: null,
+				method: "GET",
+			},
+			(error, response, body) => {
+				if (!error) {
+					if (payload.config.debug)
+						console.log(
+							"processing response error=" +
+								error +
+								" response.code=" +
+								response.statusCode +
+								" file=" +
+								payload.filename
+						);
+					//console.log("url="+texturl)
+					if (response.statusCode === 200) {
+						//if(payload.config.debug)
+						//  console.log("have data")
+						fs.writeFile(payload.filename, body, (error) => {
+							if (!error) {
+								// send the response to all waiters
+								for (var p of self.waiting[
+									payload.config.type
+								]) {
+									if (payload.config.debug)
+										console.log("resolving for id=" + p.id);
+									p.resolve.shift()(p);
+								}
+								// clear the waiting list
+								self.waiting[payload.config.type] = [];
+								// get yesterdays filename
+								var xf1 =
+									payload.config.path +
+									payload.config.type +
+									"-rawdata" +
+									"-" +
+									moment()
+										.subtract(1, "days")
+										.format("MM-DD-YYYY") +
+									".csv";
+								// if it exists
+								if (fs.existsSync(xf1)) {
+									// erase it
+									fs.unlink(xf1, (error) => {
+										if (payload.config.debug)
+											console.log(
+												"erased old file =" + xf1
+											);
+									});
+								}
+							} else {
+								if (payload.config.debug)
+									console.log("file write error id=" + p.id);
+								for (var p of self.waiting[
+									payload.config.type
+								]) {
+									if (payload.config.debug)
+										console.log(
+											"rejecting file write for id=" +
+												p.id
+										);
+									p.reject.shift()({
+										result: null,
+										payload: p,
+										error: error,
+									});
+								}
+								// clear the waiting list
+								self.waiting[payload.config.type] = [];
+							}
+						});
+					} else if (response.statusCode > 400) {
+						if (payload.config.debug)
+							console.log("no file, retry id=" + p.id);
+						for (var p of self.waiting[payload.config.type]) {
+							if (payload.config.debug)
+								console.log("rejecting no file for id=" + p.id);
+							p.reject.shift()({
+								data: null,
+								payload: p,
+								error: response.statusCode,
+							});
+						}
+						// clear the waiting list
+						self.waiting[payload.config.type] = [];
+					}
+				} else {
+					if (payload.config.debug)
+						console.log(
+							"===>error= id=" +
+								payload.id +
+								" " +
+								JSON.stringify(error)
+						);
+					for (var p of self.waiting[payload.config.type]) {
+						if (payload.config.debug)
+							console.log("rejecting error for id=" + p.id);
+						p.reject.shift()({
+							data: null,
+							payload: p,
+							error: error,
+						});
+					}
+					// clear the waiting list
+					self.waiting[payload.config.type] = [];
+				}
+			}
+		); // end request
+	},
+
+	unique: function (list, name, payload) {
+		var self = this;
+		var result = null;
+		if (payload.config.debug1)
+			console.log("looking for " + name + " in " + JSON.stringify(list));
+		list.forEach(function (e) {
+			if (e.toLowerCase().indexOf(name.toLowerCase()) >= 0) {
+				result = e;
+			}
+		});
+
+		return result;
+	},
+
+	checkDate: function (date, payload) {
+		if (payload.config.type == "countries") return date.endsWith("20");
+		else return date.startsWith("20");
+	},
+
+	doGetcountries: function (init, payload, location) {
+		var self = this;
+		return new Promise((resolve, reject) => {
+			//if (init == true) {
+			// format data keyed by country name
+			let fields = self.datafields[payload.config.type];
+			/*var fields =
+				payload.config.type == "countries"
+					? self.countryfields
+					: self.statefields; */
+
+			var results = {};
+			if (payload.config.debug)
+				console.log(
+					"processing for " +
+						JSON.stringify(payload.config[payload.config.type])
+				);
+			let start = payload.config.startDate
+				? moment(payload.config.startDate, self.config_date_format)
+				: moment("01/01/2020");
+			for (var c of Object.keys(location)) {
+				// payload.config[payload.config.type]) {
+				if (location[c] != undefined) {
+					if (payload.config.debug) console.log("location=" + c);
+					var totalc = 0;
+					var totald = 0;
+					var cases = [];
+					var deaths = [];
+					var tcases = [];
+					var tdeaths = [];
+					if (payload.config.debug)
+						console.log(
+							"there are " +
+								location[c].length +
+								" entries to filter"
+						);
+
+					for (var u of location[c]) {
+						if (payload.config.debug1)
+							console.log(JSON.stringify(u));
+						/*			"date=" +
+									u[fields[date_fieldname]] +
+									" cases=" +
+									u[fields[cases_fieldname]] +
+									" deaths=" +
+									u[fields[deaths_fieldname]] +
+									" location=" +
+									u[fields[location_fieldname]]
+							); */
+						// filter out before startDate
+						if (
+							true
+							/*moment(
+								u[fields.date_fieldname],
+								self.date_mask[payload.config.type]
+							).isSameOrAfter(start)*/
+						) {
+							if (
+								self.checkDate(
+									u[fields.date_fieldname],
+									payload
+								)
+							) {
+								if (payload.config.type == "countries") {
+									cases.push({
+										x: moment(
+											u[fields.date_fieldname],
+											self.date_mask[payload.config.type]
+										).format(self.charter_date_format),
+										y: parseInt(u[fields.cases_fieldname]),
+									});
+									deaths.push({
+										x: moment(
+											u[fields.date_fieldname],
+											self.date_mask[payload.config.type]
+										).format(self.charter_date_format),
+										y: parseInt(u[fields.deaths_fieldname]),
+									});
+								} else {
+									tcases.push({
+										x: moment(
+											u[fields.date_fieldname],
+											self.date_mask[payload.config.type]
+										).format(self.charter_date_format),
+										y: parseInt(u[fields.cases_fieldname]),
+									});
+									tdeaths.push({
+										x: moment(
+											u[fields.date_fieldname],
+											self.date_mask[payload.config.type]
+										).format(self.charter_date_format),
+										y: parseInt(u[fields.deaths_fieldname]),
+									});
+								}
+							}
+						}
+					}
+					if (payload.config.type == "countries") {
+						// data presented in reverse dsate order, flip them
+						cases = cases.reverse();
+						deaths = deaths.reverse();
+						// initialize cumulative counters to 0
+						// make a copy
+						tcases = JSON.parse(JSON.stringify(cases));
+						tdeaths = JSON.parse(JSON.stringify(deaths));
+						// loop thru data and create cumulative counters
+						for (var i = 1; i < cases.length; i++) {
+							tcases[i].y += tcases[i - 1].y;
+							tdeaths[i].y += tdeaths[i - 1].y;
+						}
+					} else {
+						// initialize cumulative counters to 0
+						// make a copy
+						cases = JSON.parse(JSON.stringify(tcases));
+						deaths = JSON.parse(JSON.stringify(tdeaths));
+						// loop thru data and create cumulative counters
+						for (var i = cases.length - 1; i > 0; i--) {
+							cases[i].y -= tcases[i - 1].y;
+							deaths[i].y -= tdeaths[i - 1].y;
+						}
+					}
+
+					var d = {
+						cases: cases,
+						deaths: deaths,
+						cumulative_cases: tcases,
+						cumulative_deaths: tdeaths,
+					};
+					//if(payload.config.debug)
+					//  console.log("data returned ="+JSON.stringify(d))
+					// add this country to the results
+					results[c] = d;
+				}
+			}
+			resolve(results);
+		});
+	},
+	getData: function (init, payload) {
+		if (init == true) {
+			self.getInitialData(payload).then(
+				(output) => {
+					if (payload.config.debug)
+						console.log("have data, now filter id=" + payload.id);
+					self.doGetcountries(init, output.payload, output.data)
+						.then((data) => {
+							// send the data on to the display module
+							if (payload.config.debug)
+								console.log(
+									"send filtered data id=" + payload.id
+								);
+							self.sendSocketNotification("Data", {
+								id: payload.id,
+								config: payload.config,
+								data: data,
+							});
+						})
+						.catch((error) => {
+							if (payload.config.debug)
+								console.log(
+									"cause error =" + JSON.stringify(error)
+								);
+							self.sendSocketNotification("NOT_AVAILABLE", {
+								id: error.payload.id,
+								config: error.payload.config,
+								data: null,
+							});
+						});
+				},
+				(error) => {
+					console.log("sending no data available notification");
+					self.sendSocketNotification("NOT_AVAILABLE", {
+						id: error.payload.id,
+						config: error.payload.config,
+						data: null,
+					});
+				}
+			);
+		}
+	},
+	// socketNotificationReceived received.
+	socketNotificationReceived: function (notification, payload) {
+		if (notification === "CONFIG") {
+			//console.log("payload="+JSON.stringify(payload,null,2))
+			self.getData(true, payload);
+		} else if (notification === "REFRESH") {
+			self.getData(true, payload);
+		} else if (notification === "SUSPEND") {
+			self.suspended = true;
+		} else if (notification === "RESUME") {
+			self.suspended = false;
+		}
+	},
+});

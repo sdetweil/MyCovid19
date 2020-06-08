@@ -24,8 +24,11 @@ monitor COVID 19 virus stats with line graphs
 				countries:["Italy","USA","China","Spain","France"],
         OR
 				states:['New York','Illinois','Texas'],
+        OR
+                counties [{'countyname':'statename'},{'countyname2':'statename2'}]
+                note the ':' between the county and state name
 
-				// one of countries or states MUST be specified
+				// one of countries or states or counties MUST be specified
 
 				// line colors can be any definition of color either a name ,or a hex string
 				// one per country above, used in order,
@@ -54,6 +57,8 @@ all options are case sensitive
 ||example | ["Italy","USA","China","Spain", "Germany"]|
 | `states` | OPTIONAL | '' | the list of countries for which you would like the chart to report |
 ||example | ['New York','Illinois','Texas']|
+| `counties` | OPTIONAL | '' | the list of counties for which you would like the chart to report |
+||example | [{'Travis':'Texas'},{'Oakland':'Michigan'}]|**note: colon between county and state names** |
 | `line_colors` | REQUIRED | '' | an array of colors to represent the individual country data|
 || example| ['red','white','green','yellow','#34ebde','#34ebde']|
 | `chart_type` | OPTIONAL | 'cumulative_cases' | cases reported by country |
