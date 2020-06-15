@@ -144,9 +144,11 @@ module.exports = NodeHelper.create({
 					payload.fields
 			);
 		// get the start date filter if specified
+		if (!payload.config.startDate)
+			console.log(" no startDate specified, default 01/01/2020 used");
 		let start = payload.config.startDate
 			? moment(payload.config.startDate, self.config_date_format)
-			: moment("01/01/2020");
+			: moment("01/01/2020", self.config_date_format);
 		cvt()
 			.fromFile(payload.filename) // input xls
 			.subscribe((jsonObj, index) => {
