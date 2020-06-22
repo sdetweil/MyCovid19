@@ -149,6 +149,9 @@ module.exports = NodeHelper.create({
 		let start = payload.config.startDate
 			? moment(payload.config.startDate, self.config_date_format)
 			: moment("01/01/2020", self.config_date_format);
+		if (payload.config.type != "countries")
+			start = start.subtract(1, "days");
+
 		cvt()
 			.fromFile(payload.filename) // input xls
 			.subscribe((jsonObj, index) => {
@@ -451,7 +454,7 @@ module.exports = NodeHelper.create({
 						);
 
 					for (var u of location[c]) {
-						if (payload.config.debug1)
+						if (payload.config.debug)
 							console.log(JSON.stringify(u));
 						/*			"date=" +
 									u[fields[date_fieldname]] +
@@ -533,6 +536,10 @@ module.exports = NodeHelper.create({
 							cases[i].y -= tcases[i - 1].y;
 							deaths[i].y -= tdeaths[i - 1].y;
 						}
+						cases.splice(0, 1);
+						deaths.splice(0, 1);
+						tcases.splice(0, 1);
+						tdeaths.splice(0, 1);
 					}
 
 					var d = {
