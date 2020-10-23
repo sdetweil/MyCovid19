@@ -12,25 +12,7 @@ const cvt = require("csvtojson");
 var fs = require("fs");
 
 module.exports = NodeHelper.create({
-	/*	countryfields: {
-		date_fieldname: "dateRep",
-		cases_fieldname: "cases",
-		deaths_fieldname: "deaths",
-		location_fieldname: "countriesAndTerritories",
-		geo_fieldname: "geoid",
-	},
-	statefields: {
-		date_fieldname: "date",
-		location_fieldname: "state",
-		cases_fieldname: "cases",
-		deaths_fieldname: "deaths",
-	},
-	countyfields:{
-		date_fieldname: "date",
-		location_fieldname: "state",
-		cases_fieldname: "cases",
-		deaths_fieldname: "deaths",
-	}, */
+
 	datafields: {
 		countries: {
 			date_fieldname: "dateRep",
@@ -63,12 +45,7 @@ module.exports = NodeHelper.create({
 		counties:
 			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
 	},
-	/*statesurl:
-		"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
-	countriesurl:
-		"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
-	countiesurl:
-		"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", */
+
 	waiting: { countries: [], states: [], counties: [] },
 	date_mask: {
 		countries: "DD/MM/YYYY",
@@ -86,10 +63,19 @@ module.exports = NodeHelper.create({
 	waitForFile: function (payload) {
 		return new Promise((resolve, reject) => {
 			// send it back\
+			let goodfile= false;
 			if (
 				payload.config.usePreviousFile == true &&
-				fs.existsSync(payload.filename)
-			)
+				fs.existsSync(payload.filename))
+				{
+					let stats= fs.statSync(payload.filename)
+					if(stats["size"]>2000000)
+						goodfile=true;
+					else
+						// file is damaged, erase
+						fs.unlinkSync(payload.filename)
+				}
+			if(goodfile)
 				// no need to wait
 				resolve(payload);
 			else {
@@ -158,10 +144,6 @@ module.exports = NodeHelper.create({
 				try {
 					// if this field is for one of the locations requested
 					if (
-						/*(
-						payload.config[payload.config.type].indexOf(
-							jsonObj[payload.fields.location_fieldname]
-						) >= 0 ) */
 						self.fieldtest[payload.config.type](jsonObj, payload)
 					) {
 						// if this location is within the date range
@@ -185,10 +167,13 @@ module.exports = NodeHelper.create({
 				// all done, tell the topmost function we completed
 				if (payload.config.debug)
 					console.log("done processing file id=" + payload.id);
-				payload.resolve.shift()({
-					data: payload.location,
-					payload: payload,
-				});
+				// get the 1st promise resolver if any), and send the data back
+				if(payload.resolve.length){
+					payload.resolve.shift()({
+						data: payload.location,
+						payload: payload,
+					});
+				}
 			});
 	},
 
@@ -263,10 +248,7 @@ module.exports = NodeHelper.create({
 								" url= " +
 								self.sourceurls[
 									payload.config.type
-								] /*==
-								"countries"
-								? self.countriesurl
-								: self.statesurl*/
+								]
 						);
 					self.getFile(payload);
 				} else {
@@ -284,9 +266,6 @@ module.exports = NodeHelper.create({
 		request(
 			{
 				url: self.sourceurls[payload.config.type],
-				/*payload.config.type == "countries"
-							? self.countriesurl
-							: self.statesurl, */
 				encoding: null,
 				method: "GET",
 			},
@@ -422,10 +401,6 @@ module.exports = NodeHelper.create({
 			//if (init == true) {
 			// format data keyed by country name
 			let fields = self.datafields[payload.config.type];
-			/*var fields =
-				payload.config.type == "countries"
-					? self.countryfields
-					: self.statefields; */
 
 			var results = {};
 			if (payload.config.debug)
@@ -456,22 +431,9 @@ module.exports = NodeHelper.create({
 					for (var u of location[c]) {
 						if (payload.config.debug)
 							console.log(JSON.stringify(u));
-						/*			"date=" +
-									u[fields[date_fieldname]] +
-									" cases=" +
-									u[fields[cases_fieldname]] +
-									" deaths=" +
-									u[fields[deaths_fieldname]] +
-									" location=" +
-									u[fields[location_fieldname]]
-							); */
 						// filter out before startDate
 						if (
 							true
-							/*moment(
-								u[fields.date_fieldname],
-								self.date_mask[payload.config.type]
-							).isSameOrAfter(start)*/
 						) {
 							if (
 								self.checkDate(
@@ -582,8 +544,8 @@ module.exports = NodeHelper.create({
 									"cause error =" + JSON.stringify(error)
 								);
 							self.sendSocketNotification("NOT_AVAILABLE", {
-								id: error.payload.id,
-								config: error.payload.config,
+								id: payload.id,
+								config: payload.config,
 								data: null,
 							});
 						});
@@ -591,8 +553,8 @@ module.exports = NodeHelper.create({
 				(error) => {
 					console.log("sending no data available notification");
 					self.sendSocketNotification("NOT_AVAILABLE", {
-						id: error.payload.id,
-						config: error.payload.config,
+						id: payload.id,
+						config: payload.config,
 						data: null,
 					});
 				}
