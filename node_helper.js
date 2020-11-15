@@ -54,6 +54,7 @@ module.exports = NodeHelper.create({
 	},
 	charter_date_format: "MM/DD/YYYY",
 	config_date_format: "MM/DD/YYYY",
+	downloading:{ countries: false, states: false, counties: false },
 
 	start: function () {
 		console.log("Starting node_helper for module: " + this.name);
@@ -68,12 +69,14 @@ module.exports = NodeHelper.create({
 				payload.config.usePreviousFile == true &&
 				fs.existsSync(payload.filename))
 				{
-					let stats= fs.statSync(payload.filename)
-					if(stats["size"]>2000000)
-						goodfile=true;
-					else
-						// file is damaged, erase
-						fs.unlinkSync(payload.filename)
+					if(!this.downloading[payload.config.type]){
+						let stats= fs.statSync(payload.filename)
+						if(stats["size"]>3000000)
+							goodfile=true;
+						else
+							// file is damaged, erase
+							fs.unlinkSync(payload.filename)
+					}
 				}
 			if(goodfile)
 				// no need to wait
@@ -174,6 +177,8 @@ module.exports = NodeHelper.create({
 						payload: payload,
 					});
 				}
+			},(error)=>{
+				console.log("error on cvt file = "+ payload.filename)
 			});
 	},
 
@@ -262,6 +267,7 @@ module.exports = NodeHelper.create({
 
 	getFile: function (payload) {
 		var self = this;
+		this.downloading[payload.config.type] = true;
 		// send request to get file
 		request(
 			{
@@ -270,6 +276,7 @@ module.exports = NodeHelper.create({
 				method: "GET",
 			},
 			(error, response, body) => {
+				this.downloading[payload.config.type] = false;
 				if (!error) {
 					if (payload.config.debug)
 						console.log(
