@@ -15,11 +15,19 @@ module.exports = NodeHelper.create({
 
 	datafields: {
 		countries: {
+			// changed starting `12/17/20
+		  /*
 			date_fieldname: "dateRep",
 			cases_fieldname: "cases",
 			deaths_fieldname: "deaths",
 			location_fieldname: "countriesAndTerritories",
-			geo_fieldname: "geoid",
+			geo_fieldname: "geoid", */
+			date_fieldname: "date",
+			cases_fieldname: "total_cases",
+			deaths_fieldname: "total_deaths",
+			location_fieldname: "location",
+			geo_fieldname: "continent"
+
 		},
 		states: {
 			date_fieldname: "date",
@@ -41,14 +49,18 @@ module.exports = NodeHelper.create({
 		states:
 			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
 		countries:
-			"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
+		   "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv",
+		  // changed 12/17/2020 .. ecdc source dropped
+			//"https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
 		counties:
 			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
 	},
-
+	// changed 12/17/2020 .. ecdc source dropped
+  data_order: { countries: "forward", states: "forward", counties: "forward" },
 	waiting: { countries: [], states: [], counties: [] },
 	date_mask: {
-		countries: "DD/MM/YYYY",
+	  // changed 12/17/2020 .. ecdc source dropped
+		countries: "YYYY-MM-DD", // "DD/MM/YYYY",
 		states: "YYYY-MM-DD",
 		counties: "YYYY-MM-DD",
 	},
@@ -398,7 +410,8 @@ module.exports = NodeHelper.create({
 	},
 
 	checkDate: function (date, payload) {
-		if (payload.config.type == "countries") return date.endsWith("20");
+		// changed 12/17/2020
+		if (payload.config.type == "countries1") return date.endsWith("20");
 		else return date.startsWith("20");
 	},
 
@@ -448,7 +461,7 @@ module.exports = NodeHelper.create({
 									payload
 								)
 							) {
-								if (payload.config.type == "countries") {
+								if (payload.config.type == "countries1") {
 									cases.push({
 										x: moment(
 											u[fields.date_fieldname],
@@ -482,8 +495,9 @@ module.exports = NodeHelper.create({
 							}
 						}
 					}
-					if (payload.config.type == "countries") {
-						// data presented in reverse dsate order, flip them
+					// changed 12/17/2020 .. ecdc source dropped
+					if (self.data_order[payload.config.type] =='reverse') {
+						// data presented in reverse date order, flip them
 						cases = cases.reverse();
 						deaths = deaths.reverse();
 						// initialize cumulative counters to 0

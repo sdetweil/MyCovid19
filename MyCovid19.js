@@ -105,7 +105,7 @@ Module.register("MyCovid19", {
 						case "united states":
 							// code block
 							self.config.countries[i] =
-								"United_States_of_America";
+								"United States";
 							break;
 						case "uk":
 							self.config.countries[i] = "United Kingdom";
