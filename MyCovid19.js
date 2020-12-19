@@ -37,7 +37,7 @@ Module.register("MyCovid19", {
 		yAxisTickLabelColor: "white",
 
 		attribution_label: {
-			countries: "European Centre for Disease Prevention and Control",
+			countries: "Our World in Data",
 			states: "NY Times",
 			counties: "NY Times",
 		},
