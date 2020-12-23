@@ -45,6 +45,7 @@ module.exports = NodeHelper.create({
 	},
 	suspended: false,
 	retryCount: 3,
+	active:{countries:0, counties:0, states:0},
 	sourceurls: {
 		states:
 			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
@@ -75,7 +76,7 @@ module.exports = NodeHelper.create({
 
 	waitForFile: function (payload) {
 		return new Promise((resolve, reject) => {
-			// send it back\
+			// send it back
 			let goodfile= false;
 			if (
 				payload.config.usePreviousFile == true &&
@@ -83,8 +84,17 @@ module.exports = NodeHelper.create({
 				{
 					if(!this.downloading[payload.config.type]){
 						let stats= fs.statSync(payload.filename)
-						if(stats["size"]>3000000)
-							goodfile=true;
+						if(stats["size"]>3000000) {
+							if(++this.active[payload.config.type]==1){
+								if (payload.config.debug)
+									console.log("have data, we are 1st, continue")
+								goodfile=true;
+							}
+							else{
+								if (payload.config.debug)
+									console.log("have data, we are NOT 1st, will wait")
+							}
+						}
 						else
 							// file is damaged, erase
 							fs.unlinkSync(payload.filename)
@@ -133,7 +143,7 @@ module.exports = NodeHelper.create({
 		},
 	},
 
-	processFileData: function (payload) {
+	processFileData: async  function (payload) {
 		let self = this;
 		if (payload.config.debug)
 			console.log(
@@ -142,7 +152,7 @@ module.exports = NodeHelper.create({
 					" file=" +
 					payload.filename +
 					" fields=" +
-					payload.fields
+					JSON.stringify(payload.fields)
 			);
 		// get the start date filter if specified
 		if (!payload.config.startDate)
@@ -152,7 +162,8 @@ module.exports = NodeHelper.create({
 			: moment("01/01/2020", self.config_date_format);
 		if (payload.config.type != "countries")
 			start = start.subtract(1, "days");
-
+if (payload.config.debug)
+	console.log("calling csvtojson")
 		cvt()
 			.fromFile(payload.filename) // input xls
 			.subscribe((jsonObj, index) => {
@@ -239,7 +250,7 @@ module.exports = NodeHelper.create({
 
 			self.waitForFile(payload).then((payload) => {
 				if (payload.config.debug)
-					console.log("check for file =" + payload.filename);
+					console.log("getInitialData check for file =" + payload.filename);
 				if (fs.existsSync(payload.filename)) {
 					self.processFileData(payload);
 				} else {
@@ -306,7 +317,7 @@ module.exports = NodeHelper.create({
 						fs.writeFile(payload.filename, body, (error) => {
 							if (!error) {
 								// send the response to all waiters
-								for (var p of self.waiting[
+								/*for (var p of self.waiting[
 									payload.config.type
 								]) {
 									if (payload.config.debug)
@@ -314,7 +325,13 @@ module.exports = NodeHelper.create({
 									p.resolve.shift()(p);
 								}
 								// clear the waiting list
-								self.waiting[payload.config.type] = [];
+								self.waiting[payload.config.type] = []; */
+								// get the 1st element on the waiting stack, for this type
+								let p = self.waiting[payload.config.type][0]
+								// allow us to keep going
+								if (payload.config.debug)
+										console.log("getfile resolving for id=" + p.id);
+								p.resolve.shift()(p);
 								// get yesterdays filename
 								var xf1 =
 									payload.config.path +
@@ -546,6 +563,21 @@ module.exports = NodeHelper.create({
 				(output) => {
 					if (payload.config.debug)
 						console.log("have data, now filter id=" + payload.id);
+					// if we are on the waiting listm, remove us
+					if(self.waiting[payload.config.type][0].id===payload.id){
+						if (payload.config.debug)
+							console.log("we were on the waiting list")
+						self.waiting[payload.config.type].shift()
+						self.active[payload.config.type]--;
+						// if there is some other tak on the weaiting list
+						if(self.waiting[payload.config.type].length){
+							// wake it up
+							let p = self.waiting[payload.config.type][0]
+							if(p.config.debug)
+								console.log("wake up waiter="+p.id)
+							p.resolve.shift()(p)
+						}
+					}
 					self.doGetcountries(init, output.payload, output.data)
 						.then((data) => {
 							// send the data on to the display module
@@ -562,7 +594,7 @@ module.exports = NodeHelper.create({
 						.catch((error) => {
 							if (payload.config.debug)
 								console.log(
-									"cause error =" + JSON.stringify(error)
+									"getData cause error =" + JSON.stringify(error)
 								);
 							self.sendSocketNotification("NOT_AVAILABLE", {
 								id: payload.id,
