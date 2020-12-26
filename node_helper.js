@@ -85,6 +85,7 @@ module.exports = NodeHelper.create({
 					if(!this.downloading[payload.config.type]){
 						let stats= fs.statSync(payload.filename)
 						if(stats["size"]>3000000) {
+							console.log("active type="+payload.config.type)
 							if(++this.active[payload.config.type]==1){
 								if (payload.config.debug)
 									console.log("have data, we are 1st, continue")
@@ -98,7 +99,15 @@ module.exports = NodeHelper.create({
 						else
 							// file is damaged, erase
 							fs.unlinkSync(payload.filename)
+					} else {
+						if (payload.config.debug)
+									console.log("already downloading, have to wait")
 					}
+				}
+				else{
+					if (payload.config.debug)
+						console.log("don't use previous file ="+payload.filename+" file does not exist, or get new one, usePreviousFile="+payload.config.usePreviousFile )
+					//goodfile=true
 				}
 			if(goodfile)
 				// no need to wait
@@ -258,13 +267,16 @@ if (payload.config.debug)
 				}
 				return;
 			});
+			if (payload.config.debug){
+				console.log("waitForFile waiting  usePreviousFile="+payload.config.usePreviousFile)
+			}
 
 			self.waiting[payload.config.type].push(payload);
 			// if we should NOT reuse the previous file
 			// or
 			// the file doesn't exist
 			if (
-				payload.usePreviousFile == false ||
+				payload.config.usePreviousFile == false ||
 				!fs.existsSync(payload.filename)
 			) {
 				// if we are the first
@@ -283,6 +295,9 @@ if (payload.config.debug)
 					if (payload.config.debug)
 						console.log("not first waiting " + payload.id);
 				}
+			} else {
+				if (payload.config.debug)
+						console.log("nothing to do but wait " + payload.id);
 			}
 		});
 		return promise;
@@ -569,7 +584,7 @@ if (payload.config.debug)
 							console.log("we were on the waiting list")
 						self.waiting[payload.config.type].shift()
 						self.active[payload.config.type]--;
-						// if there is some other tak on the weaiting list
+						// if there is some other task on the waiting list
 						if(self.waiting[payload.config.type].length){
 							// wake it up
 							let p = self.waiting[payload.config.type][0]
@@ -604,7 +619,7 @@ if (payload.config.debug)
 						});
 				},
 				(error) => {
-					console.log("sending no data available notification");
+					console.log("sending no data available notification error="+JSON.stringify(error));
 					self.sendSocketNotification("NOT_AVAILABLE", {
 						id: payload.id,
 						config: payload.config,

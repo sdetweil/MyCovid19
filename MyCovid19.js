@@ -519,10 +519,10 @@ Module.register("MyCovid19", {
 				const lastMoment = moment(last_date, "MM/DD/YYYY");
 				// get now as a moment
 				const now = moment();
-				// if its states, the data date lages 1 day
-				if (payload.config.states.length > 0) {
+				// if its states, the data date lags 1 day
+				//if (payload.config.states.length > 0) {
 					now.subtract(1, "d");
-				}
+				//}
 				// get just the date of now
 				const currentMoment_date = now.format("MM/DD/YYYY");
 
