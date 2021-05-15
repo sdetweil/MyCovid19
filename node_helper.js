@@ -253,7 +253,7 @@ module.exports = NodeHelper.create({
 			// or
 			// the file doesn't exist
 			if (
-				payload.usePreviousFile == false ||
+				payload.config.usePreviousFile == false ||
 				!fs.existsSync(payload.filename)
 			) {
 				// if we are the first

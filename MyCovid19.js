@@ -8,23 +8,21 @@
 Module.register("MyCovid19", {
 	// Module config defaults.
 	defaults: {
-		type: null,
 		states: [],
 		countries: [],
 		counties:[],
-		line_colors: ["red", "blue", "green", "yellow", "white"],
+		line_colors: ["red", "blue"],
 		maxWidth: 800,
 		width: 500,
 		height: 500,
 		debug: false,
-		newCanvas: false,
-		dataGood: false,
 		chart_type: "cumulative_cases",
-		newFileAvailableTimeofDay: { countries: 2, states: 8, counties: 8 },
-		usePreviousFile: true,
+
 		chart_title: "",
 		xAxisLabel: "by date",
 		yAxisLabel: "Count",
+		ranges: { min:0, max:1000, stepSize:100 },
+		startDate:"01/01/2020",
 
 		// colors
 		backgroundColor: "black",
@@ -43,9 +41,13 @@ Module.register("MyCovid19", {
 			counties: "NY Times",
 		},
 		attribution_label_height: 10,
-		newWrapper: false,
-		defer: true,
+		newFileAvailableTimeofDay: { countries: 2, states: 8, counties: 8 },
+
 	},
+	usePreviousFile: true,
+	dataGood: false,
+	newWrapper: false,
+	defer: true,
 	ourID: null,
 	loaded: false,
 	our_data: null,
@@ -55,8 +57,6 @@ Module.register("MyCovid19", {
 	retryDelay: 15,
 	timeout_handle: null,
 	displayedOnce: false,
-	//useYesterdaysData:false,
-	//waitingforTodaysData:false,
 	initialLoadDelay: 2000,
 	tickLabel: [],
 	test: 0,
@@ -70,8 +70,9 @@ Module.register("MyCovid19", {
 	},
 
 	start: function () {
-		started: true, Log.info("Starting module for: " + this.name);
 		var self = this;
+		self.config.usePreviousFile = self.usePreviousFile
+		started: true, Log.info("Starting module for: " + this.name);
 		self.config.path = this.data.path;
 		//Log.log("added path="+this.data.path+" to config data")
 		self.ourID =
@@ -164,7 +165,7 @@ Module.register("MyCovid19", {
 		if (this.config.debug) Log.log("resuming for id=" + this.ourID);
 		this.suspended = false;
 		//self.sendSocketNotification("RESUME", null);
-		if (this.config.dataGood) this.updateDom(this.config.initialLoadDelay);
+		if (this.dataGood) this.updateDom(this.config.initialLoadDelay);
 		else {
 			if (this.config.debug) Log.log("data not good, refreshing");
 			this.refreshData(this);
@@ -175,7 +176,7 @@ Module.register("MyCovid19", {
 		var self = this;
 		if (this.config.debug) Log.log("entering getDom() id=" + this.ourID);
 		// if the MM wrapper hasn't been created
-		if (self.wrapper == null || self.config.newWrapper == true) {
+		if (self.wrapper == null || self.newWrapper == true) {
 			self.wrapper = document.createElement("div");
 			self.wrapper.id = "MyCovid_wrapper_" + self.ourID;
 			// if the charts will be side by side
@@ -345,7 +346,7 @@ Module.register("MyCovid19", {
 					country_index: country_index,
 					data: __$ds,
 				};
-				if (!self.config.defer) {
+				if (!self.defer) {
 					info.self.drawChart(info.self, info);
 				} else {
 					if (this.config.debug)
@@ -504,7 +505,7 @@ Module.register("MyCovid19", {
 		var self = this;
 		if (notification === "Data") {
 			if (payload.id == self.ourID) {
-				self.config.dataGood = false;
+				self.dataGood = false;
 				if (payload.config.debug1)
 					Log.log("our_data from helper=" + JSON.stringify(payload));
 				// get pointer to data from payload
@@ -586,7 +587,7 @@ Module.register("MyCovid19", {
 								" id=" +
 								this.ourID
 						);
-					self.config.dataGood = true;
+					self.dataGood = true;
 					self.setTimerForNextRefresh(
 						self,
 						payload.config.newFileAvailableTimeofDay[
