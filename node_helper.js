@@ -337,7 +337,7 @@ module.exports = NodeHelper.create({
 								}
 							} else {
 								if (payload.config.debug)
-									console.log("file write error id=" + p.id);
+									console.log("file write error id=" + payload.id);
 								for (var p of self.waiting[
 									payload.config.type
 								]) {
@@ -358,7 +358,7 @@ module.exports = NodeHelper.create({
 						});
 					} else if (response.statusCode > 400) {
 						if (payload.config.debug)
-							console.log("no file, retry id=" + p.id);
+							console.log("no file, retry id=" + payload.id);
 						for (var p of self.waiting[payload.config.type]) {
 							if (payload.config.debug)
 								console.log("rejecting no file for id=" + p.id);

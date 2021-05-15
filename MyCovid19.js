@@ -11,6 +11,7 @@ Module.register("MyCovid19", {
 		type: null,
 		states: [],
 		countries: [],
+		counties:[],
 		line_colors: ["red", "blue", "green", "yellow", "white"],
 		maxWidth: 800,
 		width: 500,
