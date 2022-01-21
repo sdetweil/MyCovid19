@@ -7,9 +7,14 @@
 const NodeHelper = require("node_helper");
 const request = require("request");
 const path = require("path");
-var moment = require("moment");
+const moment = require("moment");
 const cvt = require("csvtojson");
-var fs = require("fs");
+const fs = require("fs");
+const { exec } = require('child_process');
+const tmp = require('tmp');
+const os = require("os");
+
+
 
 module.exports = NodeHelper.create({
 
@@ -45,6 +50,7 @@ module.exports = NodeHelper.create({
 	},
 	suspended: false,
 	retryCount: 3,
+	active:{countries:0, counties:0, states:0},
 	sourceurls: {
 		states:
 			"https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv",
@@ -75,7 +81,7 @@ module.exports = NodeHelper.create({
 
 	waitForFile: function (payload) {
 		return new Promise((resolve, reject) => {
-			// send it back\
+			// send it back
 			let goodfile= false;
 			if (
 				payload.config.usePreviousFile == true &&
@@ -83,12 +89,30 @@ module.exports = NodeHelper.create({
 				{
 					if(!this.downloading[payload.config.type]){
 						let stats= fs.statSync(payload.filename)
-						if(stats["size"]>3000000)
-							goodfile=true;
+						if(stats["size"]>3000000) {
+							console.log("active type="+payload.config.type)
+							if(++this.active[payload.config.type]==1){
+								if (payload.config.debug)
+									console.log("have data, we are 1st, continue")
+								goodfile=true;
+							}
+							else{
+								if (payload.config.debug)
+									console.log("have data, we are NOT 1st, will wait")
+							}
+						}
 						else
 							// file is damaged, erase
 							fs.unlinkSync(payload.filename)
+					} else {
+						if (payload.config.debug)
+									console.log("already downloading, have to wait")
 					}
+				}
+				else{
+					if (payload.config.debug)
+						console.log("don't use previous file ="+payload.filename+" file does not exist, or get new one, usePreviousFile="+payload.config.usePreviousFile )
+					//goodfile=true
 				}
 			if(goodfile)
 				// no need to wait
@@ -133,7 +157,7 @@ module.exports = NodeHelper.create({
 		},
 	},
 
-	processFileData: function (payload) {
+	processFileData: async  function (payload) {
 		let self = this;
 		if (payload.config.debug)
 			console.log(
@@ -142,7 +166,7 @@ module.exports = NodeHelper.create({
 					" file=" +
 					payload.filename +
 					" fields=" +
-					payload.fields
+					JSON.stringify(payload.fields)
 			);
 		// get the start date filter if specified
 		if (!payload.config.startDate)
@@ -153,45 +177,83 @@ module.exports = NodeHelper.create({
 		if (payload.config.type != "countries")
 			start = start.subtract(1, "days");
 
-		cvt()
-			.fromFile(payload.filename) // input xls
-			.subscribe((jsonObj, index) => {
-				try {
-					// if this field is for one of the locations requested
-					if (
-						self.fieldtest[payload.config.type](jsonObj, payload)
-					) {
-						// if this location is within the date range
+		var tmpObj={}
+		// if we dont have a temp file yet
+		if(!payload.tmpfile){
+			// get the name
+			tmpObj = tmp.fileSync({ mode: 0666,discardDescriptor: true, prefix: payload.config.type, postfix: '.csv' });
+			// save it
+			payload.tmpfile=tmpObj.name
+		}
+		let tpath=payload.config.path
+		if(os.platform() == "win32" ){
+			ext='.cmd'
+			tpath=tpath.replace(new RegExp('/', 'g'), '\\')
+		}
+		else
+			ext='.sh'
+		let tfn=payload.filename.split('/').slice(-1)
+		let temp=''
+		switch (payload.config.type) {
+			case 'counties':
+				temp=JSON.stringify(payload.config[payload.config.type]).slice(1,-1)
+			break;
+			default:
+				temp=payload.config[payload.config.type].join(',')
+		}
+		// create a filtered csv , reduce 88meg to <100k prevent stack crash
+		let cmd_string=tpath+"filtercsv"+ext+" "+payload.config.type+" "+tpath+tfn+" "+payload.tmpfile+" "+temp
+		if(payload.config.debug){
+			console.log("filtering via "+cmd_string)
+		}
+		exec(cmd_string, { windowsHide: true},(error, stdout, stderr) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
+				return;
+			}
+
+			if (payload.config.debug)
+				console.log("calling csvtojson")
+			cvt()
+				.fromFile(payload.tmpfile) // input xls  // changed to tmpfile
+				.subscribe((jsonObj, index) => {
+					try {
+						// if this field is for one of the locations requested
 						if (
-							moment(
-								jsonObj[payload.fields.date_fieldname],
-								self.date_mask[payload.config.type]
-							).isSameOrAfter(start)
+							self.fieldtest[payload.config.type](jsonObj, payload)
 						) {
-							//console.log("saving data for location ="+ jsonObj[payload.fields.location_fieldname])
-							payload.location[
-								jsonObj[payload.fields.location_fieldname]
-							].push(jsonObj);
+							// if this location is within the date range
+							if (
+								moment(
+									jsonObj[payload.fields.date_fieldname],
+									self.date_mask[payload.config.type]
+								).isSameOrAfter(start)
+							) {
+								//console.log("saving data for location ="+ jsonObj[payload.fields.location_fieldname])
+								payload.location[
+									jsonObj[payload.fields.location_fieldname]
+								].push(jsonObj);
+							}
 						}
+					} catch (error) {
+						console.log(" location undefined =" + error);
 					}
-				} catch (error) {
-					console.log(" location undefined =" + error);
-				}
+				})
+				.then((result) => {
+					// all done, tell the topmost function we completed
+					if (payload.config.debug)
+						console.log("done processing file id=" + payload.id);
+					// get the 1st promise resolver if any), and send the data back
+					if(payload.resolve.length){
+						payload.resolve.shift()({
+							data: payload.location,
+							payload: payload,
+						});
+					}
+				},(error)=>{
+					console.log("error on cvt file = "+ payload.filename)
+				});
 			})
-			.then((result) => {
-				// all done, tell the topmost function we completed
-				if (payload.config.debug)
-					console.log("done processing file id=" + payload.id);
-				// get the 1st promise resolver if any), and send the data back
-				if(payload.resolve.length){
-					payload.resolve.shift()({
-						data: payload.location,
-						payload: payload,
-					});
-				}
-			},(error)=>{
-				console.log("error on cvt file = "+ payload.filename)
-			});
 	},
 
 	getInitialData: function (payload) {
@@ -239,7 +301,7 @@ module.exports = NodeHelper.create({
 
 			self.waitForFile(payload).then((payload) => {
 				if (payload.config.debug)
-					console.log("check for file =" + payload.filename);
+					console.log("getInitialData check for file =" + payload.filename);
 				if (fs.existsSync(payload.filename)) {
 					self.processFileData(payload);
 				} else {
@@ -247,6 +309,9 @@ module.exports = NodeHelper.create({
 				}
 				return;
 			});
+			if (payload.config.debug){
+				console.log("waitForFile waiting  usePreviousFile="+payload.config.usePreviousFile)
+			}
 
 			self.waiting[payload.config.type].push(payload);
 			// if we should NOT reuse the previous file
@@ -272,6 +337,9 @@ module.exports = NodeHelper.create({
 					if (payload.config.debug)
 						console.log("not first waiting " + payload.id);
 				}
+			} else {
+				if (payload.config.debug)
+						console.log("nothing to do but wait " + payload.id);
 			}
 		});
 		return promise;
@@ -306,7 +374,7 @@ module.exports = NodeHelper.create({
 						fs.writeFile(payload.filename, body, (error) => {
 							if (!error) {
 								// send the response to all waiters
-								for (var p of self.waiting[
+								/*for (var p of self.waiting[
 									payload.config.type
 								]) {
 									if (payload.config.debug)
@@ -314,7 +382,13 @@ module.exports = NodeHelper.create({
 									p.resolve.shift()(p);
 								}
 								// clear the waiting list
-								self.waiting[payload.config.type] = [];
+								self.waiting[payload.config.type] = []; */
+								// get the 1st element on the waiting stack, for this type
+								let p = self.waiting[payload.config.type][0]
+								// allow us to keep going
+								if (payload.config.debug)
+										console.log("getfile resolving for id=" + p.id);
+								p.resolve.shift()(p);
 								// get yesterdays filename
 								var xf1 =
 									payload.config.path +
@@ -337,7 +411,7 @@ module.exports = NodeHelper.create({
 								}
 							} else {
 								if (payload.config.debug)
-									console.log("file write error id=" + payload.id);
+									console.log("file write error id=" + p.id);
 								for (var p of self.waiting[
 									payload.config.type
 								]) {
@@ -358,7 +432,7 @@ module.exports = NodeHelper.create({
 						});
 					} else if (response.statusCode > 400) {
 						if (payload.config.debug)
-							console.log("no file, retry id=" + payload.id);
+							console.log("no file, retry id=" + p.id);
 						for (var p of self.waiting[payload.config.type]) {
 							if (payload.config.debug)
 								console.log("rejecting no file for id=" + p.id);
@@ -411,7 +485,7 @@ module.exports = NodeHelper.create({
 
 	checkDate: function (date, payload) {
 		// changed 12/17/2020
-		if (payload.config.type == "countries1") return date.endsWith("20");
+		if (payload.config.type == "countries1") return parseInt(date.slice(-2)) >=20
 		else return date.startsWith("20");
 	},
 
@@ -546,6 +620,21 @@ module.exports = NodeHelper.create({
 				(output) => {
 					if (payload.config.debug)
 						console.log("have data, now filter id=" + payload.id);
+					// if we are on the waiting listm, remove us
+					if(self.waiting[payload.config.type][0].id===payload.id){
+						if (payload.config.debug)
+							console.log("we were on the waiting list")
+						self.waiting[payload.config.type].shift()
+						self.active[payload.config.type]--;
+						// if there is some other task on the waiting list
+						if(self.waiting[payload.config.type].length){
+							// wake it up
+							let p = self.waiting[payload.config.type][0]
+							if(p.config.debug)
+								console.log("wake up waiter="+p.id)
+							p.resolve.shift()(p)
+						}
+					}
 					self.doGetcountries(init, output.payload, output.data)
 						.then((data) => {
 							// send the data on to the display module
@@ -562,7 +651,7 @@ module.exports = NodeHelper.create({
 						.catch((error) => {
 							if (payload.config.debug)
 								console.log(
-									"cause error =" + JSON.stringify(error)
+									"getData cause error =" + JSON.stringify(error)
 								);
 							self.sendSocketNotification("NOT_AVAILABLE", {
 								id: payload.id,
@@ -572,7 +661,7 @@ module.exports = NodeHelper.create({
 						});
 				},
 				(error) => {
-					console.log("sending no data available notification");
+					console.log("sending no data available notification error="+JSON.stringify(error));
 					self.sendSocketNotification("NOT_AVAILABLE", {
 						id: payload.id,
 						config: payload.config,

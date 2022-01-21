@@ -20,6 +20,8 @@
     "fs": "0.0.1-security",
     "moment": "^2.25.3",
     "path": "^0.12.7",
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "request": "^2.88.2",
+    "tmp": "^0.2.1"
   }
 }
